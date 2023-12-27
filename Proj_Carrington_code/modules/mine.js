@@ -17,41 +17,43 @@ class Mine{
 
         draw(playersColours, ctx){
 
-            let colour = playersColours[this.playerIndex];
+            if(this.primed){
 
-            ctx.strokeStyle = colour;
+                let colour = playersColours[this.playerIndex];
 
-            ctx.lineWidth = this.lineWidth; 
+                ctx.strokeStyle = colour;
 
-            ctx.beginPath();
+                ctx.lineWidth = this.lineWidth; 
 
-            ctx.moveTo(this.originX + this.coreOffset , this.originY + this.coreOffset);
+                ctx.beginPath();
 
-            ctx.lineTo(this.originX + this.width - this.coreOffset, this.originY + this.coreOffset);
+                ctx.moveTo(this.originX + this.coreOffset , this.originY + this.coreOffset);
 
-            ctx.lineTo(this.originX + this.width - this.coreOffset , this.originY + this.height - this.coreOffset);
+                ctx.lineTo(this.originX + this.width - this.coreOffset, this.originY + this.coreOffset);
 
-            ctx.lineTo(this.originX + this.coreOffset , this.originY + this.height - this.coreOffset);
+                ctx.lineTo(this.originX + this.width - this.coreOffset , this.originY + this.height - this.coreOffset);
 
-            ctx.stroke();
+                ctx.lineTo(this.originX + this.coreOffset , this.originY + this.height - this.coreOffset);
 
-            ctx.beginPath();
+                ctx.stroke();
 
-            ctx.moveTo(this.originX , this.originY);
+                ctx.beginPath();
 
-            ctx.lineTo(this.originX + this.width , this.originY + this.height);
+                ctx.moveTo(this.originX , this.originY);
 
-            ctx.stroke();
+                ctx.lineTo(this.originX + this.width , this.originY + this.height);
 
-            ctx.beginPath();
+                ctx.stroke();
 
-            ctx.moveTo(this.originX + this.width , this.originY);
+                ctx.beginPath();
 
-            ctx.lineTo(this.originX , this.originY + this.height);
+                ctx.moveTo(this.originX + this.width , this.originY);
 
-            ctx.stroke();
+                ctx.lineTo(this.originX , this.originY + this.height);
 
-            
+                ctx.stroke();
+
+            }
 
 
         }
