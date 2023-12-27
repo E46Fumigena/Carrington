@@ -19,7 +19,7 @@ class Mine{
 
             if(this.primed){
 
-                let colour = playersColours[this.playerIndex];
+                let colour = `rgb(${playersColours[this.playerIndex]})`;
 
                 ctx.strokeStyle = colour;
 
@@ -34,6 +34,8 @@ class Mine{
                 ctx.lineTo(this.originX + this.width - this.coreOffset , this.originY + this.height - this.coreOffset);
 
                 ctx.lineTo(this.originX + this.coreOffset , this.originY + this.height - this.coreOffset);
+
+                ctx.lineTo(this.originX + this.coreOffset , this.originY + this.coreOffset);
 
                 ctx.stroke();
 
@@ -52,7 +54,6 @@ class Mine{
                 ctx.lineTo(this.originX , this.originY + this.height);
 
                 ctx.stroke();
-
             }
 
 

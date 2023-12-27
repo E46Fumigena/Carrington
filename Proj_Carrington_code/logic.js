@@ -552,20 +552,20 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
 
             if(currentGamepad.buttons[11].pressed && playersArray[i].counterStaggering == 0 && minesArray[i].primed == false && playersArray[i].speed != 0){
 
-                if(playersArray[i].speed < 0 && mineWidth + mineThrow < avatarsArray[i].originX){
+                if(playersArray[i].speed < 0 && avatarsArray[i].originX + avatarWidth < window.innerWidth - mineWidth - mineThrow){
 
                     minesArray[i].primed = true;
 
-                    minesArray[i].originX = avatarsArray[i].originX - mineThrow - mineWidth;
+                    minesArray[i].originX = avatarsArray[i].originX + avatarWidth + mineThrow;
 
                     minesArray[i].originY = floorY - mineHeight;
                 }
 
-                if(playersArray[i].speed > 0 && avatarsArray[i].originX + avatarWidth < window.innerWidth - mineWidth - mineThrow){
+                if(playersArray[i].speed > 0 && mineWidth + mineThrow < avatarsArray[i].originX){
 
                     minesArray[i].primed = true;
 
-                    minesArray[i].originx = avatarsArray[i].originX + avatarWidth + mineThrow;
+                    minesArray[i].originX = avatarsArray[i].originX - mineThrow - mineWidth;
 
                     minesArray[i].originY = floorY - mineHeight;
                 }
@@ -581,7 +581,7 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
 
             metersArray[i].draw(alivePlayerIndex * window.innerWidth / playerCounter, window.innerWidth / playerCounter, playersArray[i].health, playersArray[i].stamina, playersArray[i].charges);
 
-            minesArray[i].draw( playersColours[i] ,ctx);
+            minesArray[i].draw(playersColours, ctx);
         }
 
     }
@@ -815,7 +815,7 @@ const mineWidthMultiplier = 0.6;
 let mineWidth = avatarWidth * mineWidthMultiplier;
 let mineHeight = mineWidth;
 
-const coreOffsetMultiplier = 0.7;
+const coreOffsetMultiplier = 0.2;
 let coreOffset = mineWidth * coreOffsetMultiplier;
 
 const lineWidthMultiplier = 15;
