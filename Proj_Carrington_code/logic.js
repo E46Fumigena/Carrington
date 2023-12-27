@@ -549,12 +549,31 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
                     playersArray[i].totalDischargingCapsRight = 0;
                 }
             }
+
+            if(currentGamepad.buttons[11].pressed && playersArray[i].counterStaggering == 0 && minesArray[i].primed == false && playersArray[i].speed != 0){
+
+                if(playersArray[i].speed < 0 && mineWidth + mineThrow < avatarsArray[i].originX){
+
+                    minesArray[i].primed = true;
+                }
+
+                if(playersArray[i].speed > 0 && avatarsArray[i].originX + avatarWidth < window.innerWidth - mineWidth - mineThrow){
+
+                    minesArray[i].primed = true;
+                }
+
+
+            }
+
            
+
             avatarsArray[i].draw(playersArray);
 
             avatarsArray[i].drawLance(playersArray, avatarsArray, targetsArrayLeft, targetsArrayRight, lanceXOffsetRange, lanceXOffsetRangeTargeted, lanceYOffsetRange, lanceYOffsetRangeTargeted, lanceHeightMultiplier);
 
             metersArray[i].draw(alivePlayerIndex * window.innerWidth / playerCounter, window.innerWidth / playerCounter, playersArray[i].health, playersArray[i].stamina, playersArray[i].charges);
+
+            minesArray[i].draw( playersColours[i] ,ctx);
         }
 
     }
@@ -792,7 +811,10 @@ const coreOffsetMultiplier = 0.7;
 let coreOffset = mineWidth * coreOffsetMultiplier;
 
 const lineWidthMultiplier = 15;
-let mineLineWidth = mineWidth / lineWidthMultiplier ;
+let mineLineWidth = mineWidth / lineWidthMultiplier;
+
+const mineThrowMultiplier = 0.1;
+let mineThrow = mineWidth * mineThrowMultiplier;
 
 
 let playersArray = [];
