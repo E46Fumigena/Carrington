@@ -555,11 +555,19 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
                 if(playersArray[i].speed < 0 && mineWidth + mineThrow < avatarsArray[i].originX){
 
                     minesArray[i].primed = true;
+
+                    minesArray[i].originX = avatarsArray[i].originX - mineThrow - mineWidth;
+
+                    minesArray[i].originY = floorY - mineHeight;
                 }
 
                 if(playersArray[i].speed > 0 && avatarsArray[i].originX + avatarWidth < window.innerWidth - mineWidth - mineThrow){
 
                     minesArray[i].primed = true;
+
+                    minesArray[i].originx = avatarsArray[i].originX + avatarWidth + mineThrow;
+
+                    minesArray[i].originY = floorY - mineHeight;
                 }
 
 
