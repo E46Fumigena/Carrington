@@ -1,0 +1,16 @@
+*{ 
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+
+    font-family: Verdana, Tahoma, sans-serif;
+}
+
+#htmlCanvas{
+
+    display:block;
+    background-color: rgb(68, 68, 68);
+}
