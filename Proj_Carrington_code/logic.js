@@ -783,9 +783,21 @@ console.log(randomWeightedInt(pearTypesAndWeights));
 let alphaCounter = 0;
 
 
+const mineWidthMultiplier = 0.6;
+let mineWidth = avatarWidth * mineWidthMultiplier;
+let mineHeight = mineWidth;
+
+const coreOffsetMultiplier = 0.7;
+let coreOffset = mineWidth * coreOffsetMultiplier;
+
+const lineWidthMultiplier = 15;
+let mineLineWidth = mineWidth / lineWidthMultiplier ;
+
+
 let playersArray = [];
 let avatarsArray = [];
 let metersArray = [];
+let minesArray = [];
 
 let playerCounter = 0;
 
@@ -854,6 +866,8 @@ window.addEventListener("gamepadconnected", (e) => {
                     avatarCrestHeightMultiplier, avatarStripesNumber, playerIndex, -1 - playerIndex - 1, playersArray[playerIndex].playerColour, defaultAvatarAlphaChannel, ctx, lanceLength, lanceOverlapLength, avatarRndYInterval));
                     
                 metersArray.push(new Meter(0, ceilingY, 6, 1, 200, 170, ctx, playerIndex, playersColours[playerIndex], defaultMeterAlphaChannel, playersArray[i].numberOfCapacitors, playersArray[i].maxHealth, playersArray[i].maxStamina, playersArray[i].maxChargesPerCapacitor));
+
+                minesArray.push(new Mine(0 , 0 , mineWidth , mineHeight , coreOffset , 0 , playerIndex , mineLineWidth , false ));
 
                 playerIndex++;
             }
