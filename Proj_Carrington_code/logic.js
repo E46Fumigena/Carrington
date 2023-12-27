@@ -1,6 +1,7 @@
 import {Avatar, Player, Meter} from "./modules/player.js";
 import {randomSignedIntIntervaled, randomWeightedInt, completeRectCollisionCheck, randomUnsignedIntIntervaled,rectangleCollisionCheck} from "./modules/calc.js";
 import {Pear} from "./modules/pears.js";
+import {Mine} from "./modules/mine.js";
 
 
 function lobbyLoop(){

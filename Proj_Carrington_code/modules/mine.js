@@ -63,3 +63,4 @@ class Mine{
 
 
 }
+export {Pear};
