@@ -2,6 +2,7 @@ import {Avatar, Player, Meter} from "./modules/player.js";
 import {randomSignedIntIntervaled, randomWeightedInt, completeRectCollisionCheck, randomUnsignedIntIntervaled,rectangleCollisionCheck} from "./modules/calc.js";
 import {Pear} from "./modules/pears.js";
 import {Mine} from "./modules/mine.js";
+import {Explosion} from "./modules/explosion.js";
 
 
 function lobbyLoop(){
@@ -601,6 +602,29 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
         pearsArray[i].draw();
     }
 
+    for(let i = 0; i< minesArray.length; i++){
+
+        if(minesArray[i].primed){
+
+            minesArray[i].update(avatarsArray, pearsArray);
+
+            if(!minesArray[i].primed){
+                
+                explosionsArray[i].isAlive = true;
+                explosionsArray[i].originX = minesArray[i].originX + minesArray[i].width/2;
+                explosionsArray[i].originY = floorY;
+
+            }
+        }
+
+    }
+
+    for(let i = 0; i < explosionsArray.length;i++){
+
+        explosionsArray[i].update(deltaTimeStamp);
+        explosionsArray[i].draw(playerColour[i],ctx);
+    }
+
     previousTimeStamp = timeStamp;
 }
 
@@ -922,7 +946,7 @@ window.addEventListener("gamepadconnected", (e) => {
 
                 minesArray.push(new Mine(0 , 0 , mineWidth , mineHeight , coreOffset , 0 , playerIndex , mineLineWidth , false ));
 
-                explosionsArray.push(new Explosion(explosionRadius , 0 , 0 , explosionDamage , explosionSpeed , false));
+                explosionsArray.push(new Explosion(explosionRadius , 0 , 0 , explosionDamage , explosionSpeed , false, 1));
 
                 playerIndex++;
             }
