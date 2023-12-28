@@ -572,7 +572,7 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
                     minesArray[i].originX = avatarsArray[i].originX - mineThrow - mineWidth;
 
                     minesArray[i].originY = floorY - mineHeight;
-                    
+
                     playersArray[i].health = playersArray[i].health - mineHealthCost;
 
                     playersArray[i].charges = playersArray[i].charges - mineChargeCost;
@@ -837,10 +837,20 @@ let mineHealthCost = playerHealthMax * mineHealthCostMultiplier;
 
 const mineChargeCost = 2;
 
+const explosionRadiusMultiplier = 0.33/2;
+let explosionRadius = window.innerWidth * explosionRadiusMultiplier;
+
+const explosionDamageMultiplier =  1;
+let explosionDamage = damageReference * explosionDamageMultiplier;
+
+const explosionSpeedMultiplier = 0.6;
+let explosionSpeed = playerSpeedMax * explosionSpeedMultiplier;
+
 let playersArray = [];
 let avatarsArray = [];
 let metersArray = [];
 let minesArray = [];
+let explosionsArray = [];
 
 let playerCounter = 0;
 
@@ -911,6 +921,8 @@ window.addEventListener("gamepadconnected", (e) => {
                 metersArray.push(new Meter(0, ceilingY, 6, 1, 200, 170, ctx, playerIndex, playersColours[playerIndex], defaultMeterAlphaChannel, playersArray[i].numberOfCapacitors, playersArray[i].maxHealth, playersArray[i].maxStamina, playersArray[i].maxChargesPerCapacitor));
 
                 minesArray.push(new Mine(0 , 0 , mineWidth , mineHeight , coreOffset , 0 , playerIndex , mineLineWidth , false ));
+
+                explosionsArray.push(new Explosion(explosionRadius , 0 , 0 , explosionDamage , explosionSpeed , false));
 
                 playerIndex++;
             }
