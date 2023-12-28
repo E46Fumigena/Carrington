@@ -550,7 +550,7 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
                 }
             }
 
-            if(currentGamepad.buttons[11].pressed && playersArray[i].counterStaggering == 0 && minesArray[i].primed == false && playersArray[i].speed != 0){
+            if(currentGamepad.buttons[11].pressed && playersArray[i].counterStaggering == 0 && minesArray[i].primed == false && playersArray[i].speed != 0 && playersArray[i].health > mineHealthCost && playersArray[i].charges >= mineChargeCost){
 
                 if(playersArray[i].speed < 0 && avatarsArray[i].originX + avatarWidth < window.innerWidth - mineWidth - mineThrow){
 
@@ -559,6 +559,10 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
                     minesArray[i].originX = avatarsArray[i].originX + avatarWidth + mineThrow;
 
                     minesArray[i].originY = floorY - mineHeight;
+
+                    playersArray[i].health = playersArray[i].health - mineHealthCost;
+
+                    playersArray[i].charges = playersArray[i].charges - mineChargeCost;
                 }
 
                 if(playersArray[i].speed > 0 && mineWidth + mineThrow < avatarsArray[i].originX){
@@ -568,6 +572,10 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
                     minesArray[i].originX = avatarsArray[i].originX - mineThrow - mineWidth;
 
                     minesArray[i].originY = floorY - mineHeight;
+                    
+                    playersArray[i].health = playersArray[i].health - mineHealthCost;
+
+                    playersArray[i].charges = playersArray[i].charges - mineChargeCost;
                 }
 
 
@@ -824,6 +832,10 @@ let mineLineWidth = mineWidth / lineWidthMultiplier;
 const mineThrowMultiplier = 0.1;
 let mineThrow = mineWidth * mineThrowMultiplier;
 
+const mineHealthCostMultiplier = 0.2;
+let mineHealthCost = playerHealthMax * mineHealthCostMultiplier;
+
+const mineChargeCost = 2;
 
 let playersArray = [];
 let avatarsArray = [];
