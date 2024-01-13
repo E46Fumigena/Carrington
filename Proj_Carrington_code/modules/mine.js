@@ -1,4 +1,4 @@
-import {randomSignedIntIntervaled, randomWeightedInt, completeRectCollisionCheck, randomUnsignedIntIntervaled,rectangleCollisionCheck} from "./modules/calc.js";
+import {randomSignedIntIntervaled, randomWeightedInt, completeRectCollisionCheck, randomUnsignedIntIntervaled,rectangleCollisionCheck} from "./calc.js";
 
 class Mine{
 
@@ -72,7 +72,9 @@ class Mine{
 
                 avatarCheck = completeRectCollisionCheck([[this.originX , this.originY],[this.originX + this.width , this.originY], [this.originX + this.width , this.originY + this.height] , [this.originX,this.originY + this.height]],
                     [[avatarsArray[i].originX , avatarsArray[i].originY],[avatarsArray[i].originX + avatarsArray[i].width , avatarsArray[i].originY], [avatarsArray[i].originX + avatarsArray[i].width , avatarsArray[i].originY + avatarsArray[i].height] , 
-                    [avatarsArray[i].originX,avatarsArray[i].originY + avatarsArray[i].height]]);
+                    [avatarsArray[i].originX , avatarsArray[i].originY + avatarsArray[i].height]]);
+
+                if(avatarCheck){break}
             }
 
             for(let i = 0 ; i < pearsArray.length ; i++){
@@ -84,6 +86,8 @@ class Mine{
                         [pearsArray[i].originX,pearsArray[i].originY + pearsArray[i].height]]);
                 
                 }
+
+                if(pearCheck){break}
             }
 
 

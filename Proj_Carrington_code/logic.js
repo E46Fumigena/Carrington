@@ -113,8 +113,6 @@ function countdownLoop(timeStamp){
 
                 pearsArray.push(new Pear(i, pearType, pearWidth, pearWidth, originX, ceilingY, pearSpeedMax, pearAcceleration, ceilingCounterInterval, floorCounterInterval, true, ctx, pearTypesAndWeights, pearColours, superPearColour, superPearIndicatorRadiusMultiplier, ceilingCounter, floorCounter, 0));
 
-                console.log(pearsArray[i]);
-
                 originX = originX + pearWidth;
             }
         }
@@ -161,8 +159,6 @@ function gameLoop(timeStamp){
     }
     //pay attention to delta = 0 ! in an extremely improbable situation, it might backfire.
     deltaTimeStamp = timeStamp - previousTimeStamp;
-
-    //console.log(deltaTimeStamp);
 
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
@@ -340,8 +336,6 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
                 avatarsArray[i].originX = 1;
                 //if the player is already in staggering mode and hits the wall inertially, the higher of the staggering counter values takes precedence
                 playersArray[i].counterStaggering = Math.max(Math.abs(playersArray[i].speed) * staggeringMaxTime * 1000 / playerSpeedMax, playersArray[i].counterStaggering);//player's Staggering counter is in milliseconds
-
-                //console.log(`${playersArray[i].counterStaggering}`);
 
                 playersArray[i].health = playersArray[i].health - Math.abs(playersArray[i].speed) * damageReference / playerSpeedMax;
 
@@ -578,8 +572,6 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
 
                     playersArray[i].charges = playersArray[i].charges - mineChargeCost;
                 }
-
-
             }
 
            
@@ -602,7 +594,7 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
         pearsArray[i].draw();
     }
 
-    for(let i = 0; i< minesArray.length; i++){
+    for(let i = 0; i < minesArray.length; i++){
 
         if(minesArray[i].primed){
 
@@ -610,10 +602,13 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
 
             if(!minesArray[i].primed){
                 
-                explosionsArray[i].isAlive = true;
+                explosionsArray[i].isLive = true;
                 explosionsArray[i].originX = minesArray[i].originX + minesArray[i].width/2;
                 explosionsArray[i].originY = floorY;
 
+                console.log(`mine index: ${i}`);
+                console.log(`epicenter X: ${explosionsArray[i].originX}`);
+                console.log(`epicenter Y: ${explosionsArray[i].originY}`);
             }
         }
 
@@ -621,8 +616,8 @@ updateAvatars: for(let i = 0; i < playersArray.length; i++){
 
     for(let i = 0; i < explosionsArray.length;i++){
 
-        explosionsArray[i].update(deltaTimeStamp);
-        explosionsArray[i].draw(playerColour[i],ctx);
+        explosionsArray[i].update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY);
+        explosionsArray[i].draw(playersColours[i],ctx, deltaTimeStamp);
     }
 
     previousTimeStamp = timeStamp;
@@ -838,8 +833,6 @@ const superPearColour = "OrangeRed";
 
 const superPearIndicatorRadiusMultiplier = 4;//fraction of a pear width to be the radius of the super pear indicator circle
 
-console.log(randomWeightedInt(pearTypesAndWeights));
-
 let alphaCounter = 0;
 
 
@@ -961,7 +954,3 @@ window.addEventListener("gamepadconnected", (e) => {
 
     
 window.requestAnimationFrame(mainLoop);
-
-
-console.log(window.innerWidth);
-console.log(playerSpeedMax);

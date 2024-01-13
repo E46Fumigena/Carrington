@@ -39,7 +39,6 @@ class Pear{
             }
         }
 
-        //console.log(this.ceilingCounter);
         if((this.pearType != 6 && this.pearType != 7) && this.ceilingCounter === 0){
         
             if(this.originY < floorY){
@@ -71,13 +70,9 @@ class Pear{
                     }
                 }
 
-                if(collisionsRegistry.length != 0){console.log(`collision registry: ${collisionsRegistry}`)};
-
                 if(collisionsRegistry.length != 0){
 
                     let collisionTarget = collisionsRegistry[randomArrayPosition(collisionsRegistry)];
-
-                    console.log(`collision target index: ${collisionTarget}`);
 
                     switch(this.pearType){
 
@@ -212,8 +207,6 @@ class Pear{
                     }
                 }
             }
-
-            if(collisionsRegistry.length != 0){console.log(`boulder collision registry: ${collisionsRegistry}`)};
             
             if(collisionsRegistry.length != 0){
 
@@ -233,8 +226,6 @@ class Pear{
                             }
 
                             playersArray[collisionTarget].counterStaggering = Math.max(staggeringMaxTime * 1000, playersArray[collisionTarget].counterStaggering);
-
-                            console.log(`player ${collisionTarget} got a staggering time of: ${playersArray[collisionTarget].counterStaggering}`);
                         }
                         else if(this.originY === floorY - this.height){
                             //a boulder standing on the floor behaves like a lateral wall with regards to the damage and staggering time inflicted to a player in case of a collision

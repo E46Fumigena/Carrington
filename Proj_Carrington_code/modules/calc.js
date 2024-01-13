@@ -61,7 +61,6 @@ function rectangleCollisionCheck(firstRectangle, secondRectangle){
         
         && (firstRectangle[i][1] >= secondRectangle[0][1] && firstRectangle[i][1] <= secondRectangle[3][1])){
 
-            console.log("glepo!");
             return(true);
         }
     }
@@ -72,8 +71,8 @@ function rectangleCollisionCheck(firstRectangle, secondRectangle){
 //this collision check function applies the first collision in both ways, to perform a complet collision check
 function completeRectCollisionCheck(firstRectangle, secondRectangle){
 
-    if(rectangleCollisionCheck(firstRectangle, secondRectangle)){return(true)}
-    if(rectangleCollisionCheck(secondRectangle, firstRectangle)){return(true)}
+    if(rectangleCollisionCheck(firstRectangle, secondRectangle)){console.log("collision!"); return(true)}
+    if(rectangleCollisionCheck(secondRectangle, firstRectangle)){console.log("collision!"); return(true)}
 
     return(false);
 }
