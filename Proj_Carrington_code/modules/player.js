@@ -38,7 +38,7 @@ class Player{
 
                 if(avatarsArray[i].originX > avatarsArray[currentPlayerIndex].originX - lanceLength - avatarWidth && avatarsArray[i].originX < avatarsArray[currentPlayerIndex].originX - avatarWidth){
 
-                    if(targetsIndexArray.length == 0){
+                    if(targetsIndexArray.length === 0){
 
                         targetsIndexArray.push(i);
                     }
@@ -50,7 +50,7 @@ class Player{
 
                             targetsIndexArray.push(i);
                         }
-                        else if(avatarsArray[i].originX == avatarsArray[targetsIndexArray[targetsIndexArray.length -1]].originX){
+                        else if(avatarsArray[i].originX === avatarsArray[targetsIndexArray[targetsIndexArray.length -1]].originX){
 
                             targetsIndexArray.push(i);
                         }
@@ -72,7 +72,7 @@ class Player{
 
                 if(avatarsArray[i].originX < avatarsArray[currentPlayerIndex].originX + lanceLength + avatarWidth && avatarsArray[i].originX > avatarsArray[currentPlayerIndex].originX + avatarWidth){
 
-                    if(targetsIndexArray.length == 0){
+                    if(targetsIndexArray.length === 0){
 
                         targetsIndexArray.push(i);
                     }
@@ -84,7 +84,7 @@ class Player{
 
                             targetsIndexArray.push(i);
                         }
-                        else if(avatarsArray[i].originX == avatarsArray[targetsIndexArray[targetsIndexArray.length -1]].originX){
+                        else if(avatarsArray[i].originX === avatarsArray[targetsIndexArray[targetsIndexArray.length -1]].originX){
 
                             targetsIndexArray.push(i);
                         }
@@ -234,7 +234,7 @@ class Avatar{
 
     drawIdentifier() {
 
-        this.ctx.fillStyle = `rgba(${this.playerColour},${this.alphaChannel}`;
+        this.ctx.fillStyle = `rgba(${this.playerColour},${this.alphaChannel})`;
 
         this.ctx.beginPath();
         this.ctx.arc(this.originX + this.width / 2, this.originY - this.width / 2 - this.height / 10, this.width / 2, 0, 2 * Math.PI);
@@ -272,7 +272,7 @@ class Avatar{
 
             topLineOriginX = this.originX + i * crestWidth + this.ctx.lineWidth / 2;
 
-            if(i == 0 || i == crestIntervals - 1){
+            if(i === 0 || i === crestIntervals - 1){
 
                 this.ctx.beginPath();
                 this.ctx.moveTo(topLineOriginX, topCrestOriginY);
@@ -283,7 +283,7 @@ class Avatar{
             }
             else{
 
-                if(i%2 == 0){
+                if(i%2 === 0){
 
                     topLineOriginX = topLineOriginX - this.playerIndex * (crestWidth / this.crestOffsetMultiplier);
 

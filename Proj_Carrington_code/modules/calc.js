@@ -77,6 +77,4 @@ function completeRectCollisionCheck(firstRectangle, secondRectangle){
     return(false);
 }
 
-
-
 export {randomSignedIntIntervaled, randomWeightedInt, completeRectCollisionCheck, randomArrayPosition, randomUnsignedIntIntervaled, rectangleCollisionCheck};

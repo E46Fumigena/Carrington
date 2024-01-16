@@ -2,7 +2,9 @@ import {Avatar, Player, Meter} from "./modules/player.js";
 import {randomSignedIntIntervaled, randomWeightedInt, completeRectCollisionCheck, randomUnsignedIntIntervaled,rectangleCollisionCheck} from "./modules/calc.js";
 import {Pear} from "./modules/pears.js";
 import {Mine} from "./modules/mine.js";
-import {Explosion} from "./modules/explosion.js";
+import {Explosion, GremlinDischarge} from "./modules/explosion.js";
+import {Gremlin} from "./modules/gremlin.js";
+import {InfoDisplay} from "./modules/infodisplay.js";
 
 
 function lobbyLoop(){
@@ -34,7 +36,7 @@ function lobbyLoop(){
 
                     avatarsArray[i].drawIdentifier();
 
-                    console.log(`player index is: ${i}`);
+                    //console.log(`player index is: ${i}`);
                 }
 
             }
@@ -66,11 +68,13 @@ function lobbyLoop(){
             }
         }
 
-        if(playerCounter > 1 && xAllPressed == true && rbumperAllPressed == true){
+        if(playerCounter > 1 && xAllPressed === true && rbumperAllPressed === true){
 
             stageLobbyOn = false;
 
             stageCountdownOn = true;
+
+
         }
     }
 }
@@ -80,7 +84,7 @@ function countdownLoop(timeStamp){
 
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    if(startTime == 0){
+    if(startTime === 0){
 
         startTime = timeStamp;
 
@@ -109,12 +113,24 @@ function countdownLoop(timeStamp){
 
                 let ceilingCounter = randomUnsignedIntIntervaled(ceilingCounterInterval[0], ceilingCounterInterval[1]);
 
+                if(ceilingCounter === 0){console.log("FAULT!")}
+
                 let floorCounter = randomUnsignedIntIntervaled(floorCounterInterval[0], floorCounterInterval[1]);
 
-                pearsArray.push(new Pear(i, pearType, pearWidth, pearWidth, originX, ceilingY, pearSpeedMax, pearAcceleration, ceilingCounterInterval, floorCounterInterval, true, ctx, pearTypesAndWeights, pearColours, superPearColour, superPearIndicatorRadiusMultiplier, ceilingCounter, floorCounter, 0));
+                pearsArray.push(new Pear(i, pearType, pearWidth, pearWidth, originX, ceilingY, pearSpeedMax, pearAcceleration, ceilingCounterInterval, floorCounterInterval,
+                     true, ctx, pearTypesAndWeights, pearColours, superPearColour, superPearIndicatorRadiusMultiplier, ceilingCounter, floorCounter, 0, false, 
+                     gremlinSuperHealthPears, gremlinSuperChargePears, gremlinSuperStaminaPears));
 
                 originX = originX + pearWidth;
             }
+
+            theGremlin = new Gremlin(window.innerWidth / 2 - gremlinWidth / 2, floorY, gremlinWidth, gremlinHeight, gremlinSlumberColour, gremlinLiveColour, gremlinUnleashPears,
+                                            0, 0, gremlinSpeedMax, 0, gremlinDischarges, 0, gremlinDischargeDamage,
+                                            gremlinDischargeRange, 1, gremlinTimeBetweenDischarges, gremlinPrimeDischargeTime, false, gremlinLifeCounter, gremlinLifeCounterMax, gremlinMaxSpeedPears);
+
+            gremlinDischarge = new GremlinDischarge(gremlinDischargeRange / 2 , 0 , 0 , gremlinDamageInterval , explosionSpeed , false, 1, explosionLineWidthMultiplier, gremlinDischargeHitProbability);
+
+            startTime = 0;//!!!
         }
     }
 
@@ -130,7 +146,7 @@ function countdownLoop(timeStamp){
         
         ctx.fillText(`${countdownValue}`, window.innerWidth / 2, window.innerHeight / 2.5);
     }
-    else if(countdownValue == 0){
+    else if(countdownValue === 0){
 
         ctx.fillText("Start!", window.innerWidth / 2, window.innerHeight / 2.5);
     }
@@ -153,474 +169,511 @@ function gameLoop(timeStamp){
 
 
 
-    if (startTime == 0){
-
+    if (startTime === 0){
+        //skipped frame
         startTime = timeStamp;
+
+        previousTimeStamp = timeStamp;
     }
-    //pay attention to delta = 0 ! in an extremely improbable situation, it might backfire.
-    deltaTimeStamp = timeStamp - previousTimeStamp;
+    else{
 
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        //pay attention to delta = 0 ! in an extremely improbable situation, it might backfire <- obsolete, but important obs nonetheless
+        //LE skipped a frame in order to have a valid previousTimeStamp
+        deltaTimeStamp = timeStamp - previousTimeStamp;
 
-    //*************UPDATE VALUES********************
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    //UPDATE AVATARS
+        //*************UPDATE VALUES********************
 
-updateAvatars: for(let i = 0; i < playersArray.length; i++){
+        //UPDATE AVATARS
 
-        if(playersArray[i].isAlive){
+        updateAvatars: for(let i = 0; i < playersArray.length; i++){
 
-            let targetsArrayLeft = [];
+            if(playersArray[i].isAlive){
 
-            let targetsArrayRight = [];
+                let targetsArrayLeft = [];
 
-            alivePlayerIndex++;
+                let targetsArrayRight = [];
 
-            if(playersArray[i].counterStaggering > 0){
+                alivePlayerIndex++;
 
-                playersArray[i].counterStaggering = playersArray[i].counterStaggering - deltaTimeStamp;
+                if(playersArray[i].counterStaggering > 0){
 
-                if(playersArray[i].counterStaggering < 0){
+                    playersArray[i].counterStaggering = playersArray[i].counterStaggering - deltaTimeStamp;
 
-                    playersArray[i].counterStaggering = 0;
-                }
-            }
+                    if(playersArray[i].counterStaggering < 0){
 
-
-            currentGamepad = navigator.getGamepads()[playersArray[i].gamepadIndex];
-
-            //*******************MOVEMENT Section */
-
-            //movement button to the RIGHT pressed; processing movement to the RIGHT
-            if(currentGamepad.buttons[15].pressed && playersArray[i].counterStaggering == 0){
-
-                //sprint buttons pressed condition
-                if((currentGamepad.buttons[5].pressed || currentGamepad.buttons[4].pressed) && playersArray[i].stamina != 0){
-
-                    currentSpeedMax = playerSpeedSprintMax;
-
-                    currentAcceleration = playerAcceleration + playerAccelerationSprint;
-
-                    subtractStamina = true;
-                }
-                else{
-
-                    currentSpeedMax = playersArray[i].speedMax;
-
-                    currentAcceleration = playerAcceleration;
+                        playersArray[i].counterStaggering = 0;
+                    }
                 }
 
-                //speed condition
-                if(playersArray[i].speed >= 0){
 
-                    playersArray[i].speed = playersArray[i].speed + currentAcceleration;
+                currentGamepad = navigator.getGamepads()[playersArray[i].gamepadIndex];
 
-                    if(playersArray[i].speed > currentSpeedMax){
+                //*******************MOVEMENT Section */
 
-                        playersArray[i].speed = currentSpeedMax;
+                //movement button to the RIGHT pressed; processing movement to the RIGHT
+                if(currentGamepad.buttons[15].pressed && playersArray[i].counterStaggering === 0){
+
+                    //sprint buttons pressed condition
+                    if((currentGamepad.buttons[5].pressed || currentGamepad.buttons[4].pressed) && playersArray[i].stamina != 0){
+
+                        currentSpeedMax = playerSpeedSprintMax;
+
+                        currentAcceleration = playerAcceleration + playerAccelerationSprint;
+
+                        subtractStamina = true;
+                    }
+                    else{
+
+                        currentSpeedMax = playersArray[i].speedMax;
+
+                        currentAcceleration = playerAcceleration;
                     }
 
-                    avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
+                    //speed condition
+                    if(playersArray[i].speed >= 0){
 
-                    if(subtractStamina){
+                        playersArray[i].speed = playersArray[i].speed + currentAcceleration;
 
-                        playersArray[i].stamina = playersArray[i].stamina - playerStaminaConsumption * deltaTimeStamp / 1000;
+                        if(playersArray[i].speed > currentSpeedMax){
 
-                        if(playersArray[i].stamina < 0){
-    
-                            playersArray[i].stamina = 0;
+                            playersArray[i].speed = currentSpeedMax;
+                        }
+
+                        avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
+
+                        if(subtractStamina){
+
+                            playersArray[i].stamina = playersArray[i].stamina - playerStaminaConsumption * deltaTimeStamp / 1000;
+
+                            if(playersArray[i].stamina < 0){
+        
+                                playersArray[i].stamina = 0;
+                            }
                         }
                     }
+                    // if player was sprinting in previous frame and has attained a speed greater than playersArray[i].speedMax, but is sprinting no more
+                    else if(!subtractStamina && playersArray[i].speed >= 0 && Math.abs(playersArray[i].speed) > currentSpeedMax){
+
+                        playersArray[i].speed = playersArray[i].speed - playerDeceleration;
+
+                        if(playersArray[i].speed < currentSpeedMax){
+
+                            playersArray[i].speed = currentSpeedMax;
+                        }
+
+                        avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
+                    }
+
                 }
-                // if player was sprinting in previous frame and has attained a speed greater than playersArray[i].speedMax, but is sprinting no more
-                else if(!subtractStamina && playersArray[i].speed >= 0 && Math.abs(playersArray[i].speed) > currentSpeedMax){
+                //processing player's inertial movement to the RIGHT. it also covers the situation in which the left move button is pressed at this time and it makes so that
+                //the player starts moving to the left only after it first reaches v = 0 by decelerating inertially.
+                else if(playersArray[i].speed > 0){
 
                     playersArray[i].speed = playersArray[i].speed - playerDeceleration;
 
-                    if(playersArray[i].speed < currentSpeedMax){
+                    if(playersArray[i].speed < 0){
 
-                        playersArray[i].speed = currentSpeedMax;
+                        playersArray[i].speed = 0;
                     }
 
-                    avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
+                    avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;                
                 }
 
-            }
-            //processing player's inertial movement to the RIGHT. it also covers the situation in which the left move button is pressed at this time and it makes so that
-            //the player starts moving to the left only after it first reaches v = 0 by decelerating inertially.
-            else if(playersArray[i].speed > 0){
+                //movement button to the LEFT pressed; processing movement to the LEFT
+                if(currentGamepad.buttons[14].pressed && playersArray[i].counterStaggering === 0){
 
-                playersArray[i].speed = playersArray[i].speed - playerDeceleration;
+                    //sprint buttons pressed condition
+                    if((currentGamepad.buttons[5].pressed || currentGamepad.buttons[4].pressed) && playersArray[i].stamina != 0){
 
-                if(playersArray[i].speed < 0){
+                        currentSpeedMax = playerSpeedSprintMax;
 
-                    playersArray[i].speed = 0;
-                }
+                        currentAcceleration = playerAcceleration + playerAccelerationSprint;
 
-                avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;                
-            }
-
-            //movement button to the LEFT pressed; processing movement to the LEFT
-            if(currentGamepad.buttons[14].pressed && playersArray[i].counterStaggering == 0){
-
-                //sprint buttons pressed condition
-                if((currentGamepad.buttons[5].pressed || currentGamepad.buttons[4].pressed) && playersArray[i].stamina != 0){
-
-                    currentSpeedMax = playerSpeedSprintMax;
-
-                    currentAcceleration = playerAcceleration + playerAccelerationSprint;
-
-                    subtractStamina = true;
-                }
-                else{
-
-                    currentSpeedMax = playersArray[i].speedMax;
-
-                    currentAcceleration = playerAcceleration;
-                }
-                //speed condition
-                if(playersArray[i].speed <= 0){
-
-                    playersArray[i].speed = playersArray[i].speed - currentAcceleration;
-
-                    if(Math.abs(playersArray[i].speed) > currentSpeedMax){
-
-                        playersArray[i].speed = - currentSpeedMax;
+                        subtractStamina = true;
                     }
+                    else{
 
-                    avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
+                        currentSpeedMax = playersArray[i].speedMax;
 
-                    if(subtractStamina){
+                        currentAcceleration = playerAcceleration;
+                    }
+                    //speed condition
+                    if(playersArray[i].speed <= 0){
 
-                        playersArray[i].stamina = playersArray[i].stamina - playerStaminaConsumption * deltaTimeStamp / 1000;
+                        playersArray[i].speed = playersArray[i].speed - currentAcceleration;
 
-                        if(playersArray[i].stamina < 0){
-    
-                            playersArray[i].stamina = 0;
+                        if(Math.abs(playersArray[i].speed) > currentSpeedMax){
+
+                            playersArray[i].speed = - currentSpeedMax;
+                        }
+
+                        avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
+
+                        if(subtractStamina){
+
+                            playersArray[i].stamina = playersArray[i].stamina - playerStaminaConsumption * deltaTimeStamp / 1000;
+
+                            if(playersArray[i].stamina < 0){
+        
+                                playersArray[i].stamina = 0;
+                            }
                         }
                     }
+                    // if player was sprinting in previous frame and has attained a speed greater than playersArray[i].speedMax, but is sprinting no more
+                    else if(!subtractStamina && playersArray[i].speed <= 0 && Math.abs(playersArray[i].speed) > currentSpeedMax){
+
+                        playersArray[i].speed = playersArray[i].speed + playerDeceleration;
+
+                        if(Math.abs(playersArray[i].speed) < currentSpeedMax){
+
+                            playersArray[i].speed = - currentSpeedMax;
+                        }
+
+                        avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
+                    }
+
                 }
-                // if player was sprinting in previous frame and has attained a speed greater than playersArray[i].speedMax, but is sprinting no more
-                else if(!subtractStamina && playersArray[i].speed <= 0 && Math.abs(playersArray[i].speed) > currentSpeedMax){
+                //processing player's inertial movement to the LEFT. it also covers the situation in which the right move button is pressed at this time and it makes so that
+                //the player starts moving to the right only after it first reaches v = 0 by decelerating inertially.
+                else if(playersArray[i].speed < 0){
 
                     playersArray[i].speed = playersArray[i].speed + playerDeceleration;
 
-                    if(Math.abs(playersArray[i].speed) < currentSpeedMax){
+                    if(playersArray[i].speed > 0){
 
-                        playersArray[i].speed = - currentSpeedMax;
+                        playersArray[i].speed = 0;
                     }
 
                     avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
                 }
 
-            }
-            //processing player's inertial movement to the LEFT. it also covers the situation in which the right move button is pressed at this time and it makes so that
-            //the player starts moving to the right only after it first reaches v = 0 by decelerating inertially.
-            else if(playersArray[i].speed < 0){
 
-                playersArray[i].speed = playersArray[i].speed + playerDeceleration;
+                //check for wall collision
+                //left
+                if(avatarsArray[i].originX <= 0){
 
-                if(playersArray[i].speed > 0){
+                    avatarsArray[i].originX = 1;
+                    //if the player is already in staggering mode and hits the wall inertially, the higher of the staggering counter values takes precedence
+                    playersArray[i].counterStaggering = Math.max(Math.abs(playersArray[i].speed) * staggeringMaxTime * 1000 / playerSpeedMax, playersArray[i].counterStaggering);//player's Staggering counter is in milliseconds
+
+                    let wallDamage = Math.floor(Math.abs(playersArray[i].speed) * damageReference / playerSpeedMax);
+
+                    playersArray[i].health = playersArray[i].health - wallDamage;
+
+                    infoDisplaysArray[i].injectInfo(`-${wallDamage}`, pearColours[0]);
 
                     playersArray[i].speed = 0;
-                }
 
-                avatarsArray[i].originX = avatarsArray[i].originX + playersArray[i].speed * deltaTimeStamp / 1000;
-            }
+                    if(playersArray[i].health < 0){
 
+                        playersArray[i].health = 0;
+                    }
 
-            //check for wall collision
-            //left
-            if(avatarsArray[i].originX <= 0){
+                    if(playersArray[i].health === 0){
 
-                avatarsArray[i].originX = 1;
-                //if the player is already in staggering mode and hits the wall inertially, the higher of the staggering counter values takes precedence
-                playersArray[i].counterStaggering = Math.max(Math.abs(playersArray[i].speed) * staggeringMaxTime * 1000 / playerSpeedMax, playersArray[i].counterStaggering);//player's Staggering counter is in milliseconds
+                        playersArray[i].isAlive = false;
 
-                playersArray[i].health = playersArray[i].health - Math.abs(playersArray[i].speed) * damageReference / playerSpeedMax;
-
-                playersArray[i].speed = 0;
-
-                if(playersArray[i].health < 0){
-
-                    playersArray[i].health = 0;
-                }
-
-                if(playersArray[i].health == 0){
-
-                    playersArray[i].isAlive = false;
-
-                    continue updateAvatars;
-                }
-            }
-            //right
-            if(avatarsArray[i].originX + avatarsArray[i].width >= window.innerWidth){
-
-                avatarsArray[i].originX = window.innerWidth - avatarsArray[i].width - 1;
-                //if the player is already in staggering mode and hits the wall inertially, the higher of the staggering counter values takes precedence
-                playersArray[i].counterStaggering = Math.max(Math.abs(playersArray[i].speed) * staggeringMaxTime * 1000 / playerSpeedMax, playersArray[i].counterStaggering);//player's Staggering counter is in milliseconds
-
-                playersArray[i].health = playersArray[i].health - Math.abs(playersArray[i].speed) * damageReference / playerSpeedMax;
-
-                playersArray[i].speed = 0;
-
-                if(playersArray[i].health < 0){
-
-                    playersArray[i].health = 0;
-                }
-
-                if(playersArray[i].health == 0){
-
-                    playersArray[i].isAlive = false;
-
-                    continue updateAvatars;
-                }
-            }
-            //if the player is staggering, this makes its avatar blink by modulating the alpha channel of the avatar
-            if(playersArray[i].counterStaggering > 0){
-
-                alphaCounter++;
-
-                avatarsArray[i].alphaChannel = 1/StaggeringPulseWidth * alphaCounter;
-
-                if(alphaCounter == StaggeringPulseWidth){
-
-                    alphaCounter = 0;
-                }
-            }
-            else{
-
-                avatarsArray[i].alphaChannel = 1;
-            }
-
-
-            //***************MELEE Section */
-
-            //********SINGLE Condenser discharges*/
-
-            //initiate LANCE to the LEFT
-            if(currentGamepad.buttons[2].pressed && playersArray[i].lanceLeftCounter == 0){
-
-                if((playersArray[i].lanceRightCounter == 0 && !dualWieldingOn) || dualWieldingOn){
-
-                    if(playersArray[i].charges >= playersArray[i].maxChargesPerCapacitor){
-
-                        playersArray[i].lanceLeftCounter = lanceDurationMax * 1000 + deltaTimeStamp;
-
-                        playersArray[i].totalDischargingCapsLeft = 1;
-
-                        playersArray[i].charges = playersArray[i].charges - playersArray[i].maxChargesPerCapacitor;
+                        continue updateAvatars;
                     }
                 }
-            }
+                //right
+                if(avatarsArray[i].originX + avatarsArray[i].width >= window.innerWidth){
 
-            //initiate LANCE to the RIGHT
-            if(currentGamepad.buttons[1].pressed && playersArray[i].lanceRightCounter == 0){
+                    avatarsArray[i].originX = window.innerWidth - avatarsArray[i].width - 1;
+                    //if the player is already in staggering mode and hits the wall inertially, the higher of the staggering counter values takes precedence
+                    playersArray[i].counterStaggering = Math.max(Math.abs(playersArray[i].speed) * staggeringMaxTime * 1000 / playerSpeedMax, playersArray[i].counterStaggering);//player's Staggering counter is in milliseconds
 
-                if((playersArray[i].lanceLeftCounter == 0 && !dualWieldingOn) || dualWieldingOn){
+                    let wallDamage = Math.floor(Math.abs(playersArray[i].speed) * damageReference / playerSpeedMax);
 
-                    if(playersArray[i].charges >= playersArray[i].maxChargesPerCapacitor){
+                    playersArray[i].health = playersArray[i].health - wallDamage;
 
-                        playersArray[i].lanceRightCounter = lanceDurationMax * 1000 + deltaTimeStamp;
+                    infoDisplaysArray[i].injectInfo(`-${wallDamage}`, pearColours[0]);
 
-                        playersArray[i].totalDischargingCapsRight = 1;
+                    playersArray[i].speed = 0;
 
-                        playersArray[i].charges = playersArray[i].charges - playersArray[i].maxChargesPerCapacitor;
+                    if(playersArray[i].health < 0){
+
+                        playersArray[i].health = 0;
+                    }
+
+                    if(playersArray[i].health === 0){
+
+                        playersArray[i].isAlive = false;
+
+                        continue updateAvatars;
                     }
                 }
-            }
+                //if the player is staggering, this makes its avatar blink by modulating the alpha channel of the avatar
+                if(playersArray[i].counterStaggering > 0){
 
+                    alphaCounter++;
 
-            //*********MULTIPLE Capacitor discharges*/
+                    avatarsArray[i].alphaChannel = 1/StaggeringPulseWidth * alphaCounter;
 
-            //initiate MULTIPLE LANCES to the LEFT
-            if(currentGamepad.buttons[3].pressed && playersArray[i].lanceLeftCounter == 0){
+                    if(alphaCounter === StaggeringPulseWidth){
 
-                if((playersArray[i].lanceRightCounter == 0 && !dualWieldingOn) || dualWieldingOn){
-
-                    if(Math.floor(playersArray[i].charges / playersArray[i].maxChargesPerCapacitor) >= 2){
-
-                        playersArray[i].lanceLeftCounter = lanceDurationMax * 1000 + deltaTimeStamp;
-
-                        playersArray[i].totalDischargingCapsLeft = Math.floor(playersArray[i].charges / playersArray[i].maxChargesPerCapacitor);
-
-                        playersArray[i].charges = playersArray[i].charges % playersArray[i].maxChargesPerCapacitor;
+                        alphaCounter = 0;
                     }
                 }
-            }
+                else{
 
-            //initiate MULTIPLE LANCES to the RIGHT
-            if(currentGamepad.buttons[0].pressed && playersArray[i].lanceRightCounter == 0){
-
-                if((playersArray[i].lanceLeftCounter == 0 && !dualWieldingOn) || dualWieldingOn){
-
-                    if(Math.floor(playersArray[i].charges / playersArray[i].maxChargesPerCapacitor) >= 2){
-
-                        playersArray[i].lanceRightCounter = lanceDurationMax * 1000 + deltaTimeStamp;
-
-                        playersArray[i].totalDischargingCapsRight = Math.floor(playersArray[i].charges / playersArray[i].maxChargesPerCapacitor);
-
-                        playersArray[i].charges = playersArray[i].charges % playersArray[i].maxChargesPerCapacitor;
-                    }
+                    avatarsArray[i].alphaChannel = 1;
                 }
-            }
 
-            //process TARGETS to the LEFT lances
-            if(playersArray[i].lanceLeftCounter > 0){
 
-                targetsArrayLeft = [... playersArray[i].indexTargetsLeft(i, avatarsArray, playersArray, lanceLength, avatarWidth)];
+                //***************MELEE Section */
 
-                if(targetsArrayLeft.length > 0){
+                //********SINGLE Condenser discharges*/
 
-                    for(let j = 0; j < targetsArrayLeft.length; j++){
+                //initiate LANCE to the LEFT
+                if(currentGamepad.buttons[2].pressed && playersArray[i].lanceLeftCounter === 0){
 
-                        playersArray[targetsArrayLeft[j]].health = playersArray[targetsArrayLeft[j]].health - (healthPerSecondLanceConsumption * deltaTimeStamp / 1000) / targetsArrayLeft.length * playersArray[i].totalDischargingCapsLeft;
+                    if((playersArray[i].lanceRightCounter === 0 && !dualWieldingOn) || dualWieldingOn){
 
-                        if(playersArray[targetsArrayLeft[j]].health < 0){
+                        if(playersArray[i].charges >= playersArray[i].maxChargesPerCapacitor){
 
-                            playersArray[targetsArrayLeft[j]].health = 0;
-                        }
+                            playersArray[i].lanceLeftCounter = lanceDurationMax * 1000 + deltaTimeStamp;
 
-                        if(playersArray[targetsArrayLeft[j]].health == 0){
+                            playersArray[i].totalDischargingCapsLeft = 1;
 
-                            playersArray[targetsArrayLeft[j]].isAlive = false;
+                            playersArray[i].charges = playersArray[i].charges - playersArray[i].maxChargesPerCapacitor;
                         }
                     }
                 }
-            }
 
-            //process TARGETS to the Right lances
-            if(playersArray[i].lanceRightCounter > 0){
+                //initiate LANCE to the RIGHT
+                if(currentGamepad.buttons[1].pressed && playersArray[i].lanceRightCounter === 0){
 
-                targetsArrayRight = [... playersArray[i].indexTargetsRight(i, avatarsArray, playersArray, lanceLength, avatarWidth)];
+                    if((playersArray[i].lanceLeftCounter === 0 && !dualWieldingOn) || dualWieldingOn){
 
-                if(targetsArrayRight.length > 0){
+                        if(playersArray[i].charges >= playersArray[i].maxChargesPerCapacitor){
 
-                    for(let j = 0; j < targetsArrayRight.length; j++){
+                            playersArray[i].lanceRightCounter = lanceDurationMax * 1000 + deltaTimeStamp;
 
-                        playersArray[targetsArrayRight[j]].health = playersArray[targetsArrayRight[j]].health - (healthPerSecondLanceConsumption * deltaTimeStamp / 1000) / targetsArrayRight.length * playersArray[i].totalDischargingCapsRight;
+                            playersArray[i].totalDischargingCapsRight = 1;
 
-                        if(playersArray[targetsArrayRight[j]].health < 0){
-
-                            playersArray[targetsArrayRight[j]].health = 0;
-                        }
-
-                        if(playersArray[targetsArrayRight[j]].health == 0){
-
-                            playersArray[targetsArrayRight[j]].isAlive = false;
+                            playersArray[i].charges = playersArray[i].charges - playersArray[i].maxChargesPerCapacitor;
                         }
                     }
                 }
+
+
+                //*********MULTIPLE Capacitor discharges*/
+
+                //initiate MULTIPLE LANCES to the LEFT
+                if(currentGamepad.buttons[3].pressed && playersArray[i].lanceLeftCounter === 0){
+
+                    if((playersArray[i].lanceRightCounter === 0 && !dualWieldingOn) || dualWieldingOn){
+
+                        if(Math.floor(playersArray[i].charges / playersArray[i].maxChargesPerCapacitor) >= 2){
+
+                            playersArray[i].lanceLeftCounter = lanceDurationMax * 1000 + deltaTimeStamp;
+
+                            playersArray[i].totalDischargingCapsLeft = Math.floor(playersArray[i].charges / playersArray[i].maxChargesPerCapacitor);
+
+                            playersArray[i].charges = playersArray[i].charges % playersArray[i].maxChargesPerCapacitor;
+                        }
+                    }
+                }
+
+                //initiate MULTIPLE LANCES to the RIGHT
+                if(currentGamepad.buttons[0].pressed && playersArray[i].lanceRightCounter === 0){
+
+                    if((playersArray[i].lanceLeftCounter === 0 && !dualWieldingOn) || dualWieldingOn){
+
+                        if(Math.floor(playersArray[i].charges / playersArray[i].maxChargesPerCapacitor) >= 2){
+
+                            playersArray[i].lanceRightCounter = lanceDurationMax * 1000 + deltaTimeStamp;
+
+                            playersArray[i].totalDischargingCapsRight = Math.floor(playersArray[i].charges / playersArray[i].maxChargesPerCapacitor);
+
+                            playersArray[i].charges = playersArray[i].charges % playersArray[i].maxChargesPerCapacitor;
+                        }
+                    }
+                }
+
+                //process TARGETS to the LEFT lances
+                if(playersArray[i].lanceLeftCounter > 0){
+
+                    targetsArrayLeft = [... playersArray[i].indexTargetsLeft(i, avatarsArray, playersArray, lanceLength, avatarWidth)];
+
+                    if(targetsArrayLeft.length > 0){
+
+                        for(let j = 0; j < targetsArrayLeft.length; j++){
+
+                            playersArray[targetsArrayLeft[j]].health = playersArray[targetsArrayLeft[j]].health - (healthPerSecondLanceConsumption * deltaTimeStamp / 1000) / targetsArrayLeft.length * playersArray[i].totalDischargingCapsLeft;
+
+                            if(playersArray[targetsArrayLeft[j]].health < 0){
+
+                                playersArray[targetsArrayLeft[j]].health = 0;
+                            }
+
+                            if(playersArray[targetsArrayLeft[j]].health === 0){
+
+                                playersArray[targetsArrayLeft[j]].isAlive = false;
+                            }
+                        }
+                    }
+                }
+
+                //process TARGETS to the Right lances
+                if(playersArray[i].lanceRightCounter > 0){
+
+                    targetsArrayRight = [... playersArray[i].indexTargetsRight(i, avatarsArray, playersArray, lanceLength, avatarWidth)];
+
+                    if(targetsArrayRight.length > 0){
+
+                        for(let j = 0; j < targetsArrayRight.length; j++){
+
+                            playersArray[targetsArrayRight[j]].health = playersArray[targetsArrayRight[j]].health - (healthPerSecondLanceConsumption * deltaTimeStamp / 1000) / targetsArrayRight.length * playersArray[i].totalDischargingCapsRight;
+
+                            if(playersArray[targetsArrayRight[j]].health < 0){
+
+                                playersArray[targetsArrayRight[j]].health = 0;
+                            }
+
+                            if(playersArray[targetsArrayRight[j]].health === 0){
+
+                                playersArray[targetsArrayRight[j]].isAlive = false;
+                            }
+                        }
+                    }
+                }
+
+                //decrement LEFT lance/s COUNTER
+                if(playersArray[i].lanceLeftCounter > 0){
+
+                    playersArray[i].lanceLeftCounter = playersArray[i].lanceLeftCounter - deltaTimeStamp;
+
+                    if(playersArray[i].lanceLeftCounter < 0){
+
+                        playersArray[i].lanceLeftCounter = 0;
+                    }
+
+                    if(playersArray[i].lanceLeftCounter === 0){
+
+                        playersArray[i].totalDischargingCapsLeft = 0;
+                    }
+                }
+
+                //decrement RIGHT lance/s COUNTER
+                if(playersArray[i].lanceRightCounter > 0){
+
+                    playersArray[i].lanceRightCounter = playersArray[i].lanceRightCounter - deltaTimeStamp;
+
+                    if(playersArray[i].lanceRightCounter < 0){
+
+                        playersArray[i].lanceRightCounter = 0;
+                    }
+
+                    if(playersArray[i].lanceRightCounter === 0){
+
+                        playersArray[i].totalDischargingCapsRight = 0;
+                    }
+                }
+
+                if(currentGamepad.buttons[11].pressed && playersArray[i].counterStaggering === 0 && minesArray[i].primed === false && playersArray[i].speed != 0 && playersArray[i].health > mineHealthCost && playersArray[i].charges >= mineChargeCost){
+
+                    if(playersArray[i].speed < 0 && avatarsArray[i].originX + avatarWidth < window.innerWidth - mineWidth - mineThrow){
+
+                        minesArray[i].primed = true;
+
+                        minesArray[i].originX = avatarsArray[i].originX + avatarWidth + mineThrow;
+
+                        minesArray[i].originY = floorY - mineHeight;
+
+                        playersArray[i].health = playersArray[i].health - mineHealthCost;
+
+                        playersArray[i].charges = playersArray[i].charges - mineChargeCost;
+                    }
+
+                    if(playersArray[i].speed > 0 && mineWidth + mineThrow < avatarsArray[i].originX){
+
+                        minesArray[i].primed = true;
+
+                        minesArray[i].originX = avatarsArray[i].originX - mineThrow - mineWidth;
+
+                        minesArray[i].originY = floorY - mineHeight;
+
+                        playersArray[i].health = playersArray[i].health - mineHealthCost;
+
+                        playersArray[i].charges = playersArray[i].charges - mineChargeCost;
+                    }
+                }
+
+            
+
+                avatarsArray[i].draw(playersArray);
+
+                avatarsArray[i].drawLance(playersArray, avatarsArray, targetsArrayLeft, targetsArrayRight, lanceXOffsetRange, lanceXOffsetRangeTargeted, lanceYOffsetRange, lanceYOffsetRangeTargeted, lanceHeightMultiplier);
+
+                metersArray[i].draw(alivePlayerIndex * window.innerWidth / playerCounter, window.innerWidth / playerCounter, playersArray[i].health, playersArray[i].stamina, playersArray[i].charges);
+
+                //minesArray[i].draw(playersColours, ctx);
             }
 
-            //decrement LEFT lance/s COUNTER
-            if(playersArray[i].lanceLeftCounter > 0){
-
-                playersArray[i].lanceLeftCounter = playersArray[i].lanceLeftCounter - deltaTimeStamp;
-
-                if(playersArray[i].lanceLeftCounter < 0){
-
-                    playersArray[i].lanceLeftCounter = 0;
-                }
-
-                if(playersArray[i].lanceLeftCounter == 0){
-
-                    playersArray[i].totalDischargingCapsLeft = 0;
-                }
-            }
-
-            //decrement RIGHT lance/s COUNTER
-            if(playersArray[i].lanceRightCounter > 0){
-
-                playersArray[i].lanceRightCounter = playersArray[i].lanceRightCounter - deltaTimeStamp;
-
-                if(playersArray[i].lanceRightCounter < 0){
-
-                    playersArray[i].lanceRightCounter = 0;
-                }
-
-                if(playersArray[i].lanceRightCounter == 0){
-
-                    playersArray[i].totalDischargingCapsRight = 0;
-                }
-            }
-
-            if(currentGamepad.buttons[11].pressed && playersArray[i].counterStaggering == 0 && minesArray[i].primed == false && playersArray[i].speed != 0 && playersArray[i].health > mineHealthCost && playersArray[i].charges >= mineChargeCost){
-
-                if(playersArray[i].speed < 0 && avatarsArray[i].originX + avatarWidth < window.innerWidth - mineWidth - mineThrow){
-
-                    minesArray[i].primed = true;
-
-                    minesArray[i].originX = avatarsArray[i].originX + avatarWidth + mineThrow;
-
-                    minesArray[i].originY = floorY - mineHeight;
-
-                    playersArray[i].health = playersArray[i].health - mineHealthCost;
-
-                    playersArray[i].charges = playersArray[i].charges - mineChargeCost;
-                }
-
-                if(playersArray[i].speed > 0 && mineWidth + mineThrow < avatarsArray[i].originX){
-
-                    minesArray[i].primed = true;
-
-                    minesArray[i].originX = avatarsArray[i].originX - mineThrow - mineWidth;
-
-                    minesArray[i].originY = floorY - mineHeight;
-
-                    playersArray[i].health = playersArray[i].health - mineHealthCost;
-
-                    playersArray[i].charges = playersArray[i].charges - mineChargeCost;
-                }
-            }
-
-           
-
-            avatarsArray[i].draw(playersArray);
-
-            avatarsArray[i].drawLance(playersArray, avatarsArray, targetsArrayLeft, targetsArrayRight, lanceXOffsetRange, lanceXOffsetRangeTargeted, lanceYOffsetRange, lanceYOffsetRangeTargeted, lanceHeightMultiplier);
-
-            metersArray[i].draw(alivePlayerIndex * window.innerWidth / playerCounter, window.innerWidth / playerCounter, playersArray[i].health, playersArray[i].stamina, playersArray[i].charges);
-
-            minesArray[i].draw(playersColours, ctx);
         }
 
-    }
+        for(let i = 0; i < pearsArray.length; i++){
 
-    for(let i = 0; i < pearsArray.length; i++){
+            
 
-        pearsArray[i].update(playersArray, avatarsArray, deltaTimeStamp, floorY, ceilingY, healthBonus, staminaBonus, boulderMalus, staggeringMaxTime, damageReference);
+            pearsArray[i].update(playersArray, avatarsArray, deltaTimeStamp, floorY, ceilingY, healthBonus, staminaBonus, boulderMalus, staggeringMaxTime, damageReference, theGremlin, infoDisplaysArray);
 
-        pearsArray[i].draw();
-    }
+            pearsArray[i].draw();
 
-    for(let i = 0; i < minesArray.length; i++){
+            
+        }
 
-        if(minesArray[i].primed){
+        for(let i = 0; i < minesArray.length; i++){
 
-            minesArray[i].update(avatarsArray, pearsArray);
+            if(minesArray[i].primed){
 
-            if(!minesArray[i].primed){
-                
-                explosionsArray[i].isLive = true;
-                explosionsArray[i].originX = minesArray[i].originX + minesArray[i].width/2;
-                explosionsArray[i].originY = floorY;
+                minesArray[i].update(avatarsArray, pearsArray, playersArray);
 
-                console.log(`mine index: ${i}`);
-                console.log(`epicenter X: ${explosionsArray[i].originX}`);
-                console.log(`epicenter Y: ${explosionsArray[i].originY}`);
+                minesArray[i].draw(playersColours, ctx);
+
+                if(!minesArray[i].primed){
+                    
+                    explosionsArray[i].isLive = true;
+                    explosionsArray[i].originX = minesArray[i].originX + minesArray[i].width/2;
+                    explosionsArray[i].originY = floorY;
+
+                    //console.log(`mine index: ${i}`);
+                    //console.log(`epicenter X: ${explosionsArray[i].originX}`);
+                    //console.log(`epicenter Y: ${explosionsArray[i].originY}`);
+                }
+            }
+
+        }
+
+        for(let i = 0; i < explosionsArray.length;i++){
+
+            explosionsArray[i].update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours);
+            explosionsArray[i].draw(playersColours[i],ctx, deltaTimeStamp);
+        }
+
+        theGremlin.update(deltaTimeStamp, gremlinDischarge, floorY);
+
+        theGremlin.draw(ctx);
+
+        gremlinDischarge.update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours);
+        gremlinDischarge.draw(gremlinDischargeColour,ctx, deltaTimeStamp);
+
+        for(let i = 0; i < infoDisplaysArray.length; i++){
+
+            if(playersArray[i].isAlive){
+
+                infoDisplaysArray[i].update(deltaTimeStamp, avatarsArray, playersArray);
+
+                infoDisplaysArray[i].draw();
             }
         }
 
+        previousTimeStamp = timeStamp;
     }
-
-    for(let i = 0; i < explosionsArray.length;i++){
-
-        explosionsArray[i].update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY);
-        explosionsArray[i].draw(playersColours[i],ctx, deltaTimeStamp);
-    }
-
-    previousTimeStamp = timeStamp;
 }
 
 
@@ -645,6 +698,8 @@ function mainLoop(timeStamp){
     window.requestAnimationFrame(mainLoop);
 }
 
+/********************************************/
+//START - GLOBAL VARIABLES DECLARATIONS
 
 
 const htmlCanvas = document.getElementById("htmlCanvas");
@@ -669,6 +724,7 @@ const pearsNumber = 50;
 
 let pearsArray = [];
 
+//PLAYER / AVATAR
 const avatarCrestsNumber = 4;
 const avatarStripesNumber = 3;
 const avatarCrestOffsetMultiplier = 4;
@@ -686,7 +742,7 @@ const avatarCrestHeightMultiplier = 6;
 let centerAvatarOriginX = window.innerWidth / 2;
 let avatarOriginY = floorY - avatarHeight;
 
-//const playersColours = ["red", "blue", "green", "orange"];
+
 const playersColours = ["255, 0, 0", "0, 180, 255", "0, 255, 0", "255, 165, 0"];
 const defaultAvatarAlphaChannel = 1;
 const defaultMeterAlphaChannel = 1;
@@ -721,6 +777,7 @@ const staggeringMaxTime = 5; //in seconds; the maximum period of time a player w
 
 const StaggeringPulseWidth = 10; //the smaller it is, the faster the alpha channel passes through maximum from minimum - makes the player's avatar blink while staggered
 
+//LANCES
 const lanceLengthMultiplier = 3.5;
 let lanceLength = avatarWidth * lanceLengthMultiplier; //max length of electrical discharge; it is shorter when the target is closer
 
@@ -751,12 +808,12 @@ let lanceYOffsetRangeTargeted = lanceYOffsetRange * lanceYOffsetRangeTargetedMul
 
 let lanceHeightMultiplier = 0.2;//defines the fraction of the lance height used to draw the white "dischargey" effect when the lance is targeted
 
-
+//CAPACITORS
 const chargesPerCapacitor = 3;
 
 const numberOfCapacitors = 3;
 
-//***********Section Pears ******************/
+//PEARS
 
 let pearWidth = window.innerWidth / pearsNumber;
 
@@ -827,7 +884,9 @@ const pearTypesAndWeights = [healthPearWeight, superHealthPearWeight, staminaPea
 
 //colours of pears by type of pear
 
-const pearColours = ["Chartreuse", "Chartreuse", "Turquoise", "Turquoise", "Crimson", "Crimson", "Black", "Black"];
+//const pearColours = ["Chartreuse", "Chartreuse", "Turquoise", "Turquoise", "Crimson", "Crimson", "Black", "Black"];
+
+const pearColours = ["127, 255, 0", "127, 255, 0", "64, 224, 208", "64, 224, 208", "220, 20, 60", "220, 20, 60", "0, 0, 0", "0, 0, 0"];
 
 const superPearColour = "OrangeRed";
 
@@ -835,7 +894,7 @@ const superPearIndicatorRadiusMultiplier = 4;//fraction of a pear width to be th
 
 let alphaCounter = 0;
 
-
+//MINES
 const mineWidthMultiplier = 0.6;
 let mineWidth = avatarWidth * mineWidthMultiplier;
 let mineHeight = mineWidth;
@@ -854,6 +913,7 @@ let mineHealthCost = playerHealthMax * mineHealthCostMultiplier;
 
 const mineChargeCost = 2;
 
+//EXPLOSION
 const explosionRadiusMultiplier = 0.33/2;
 let explosionRadius = window.innerWidth * explosionRadiusMultiplier;
 
@@ -863,11 +923,101 @@ let explosionDamage = damageReference * explosionDamageMultiplier;
 const explosionSpeedMultiplier = 0.6;
 let explosionSpeed = playerSpeedMax * explosionSpeedMultiplier;
 
+const explosionLineWidthMultiplier = 1.4;
+
+//GREMLIN
+
+let theGremlin = {};
+
+let gremlinDischarge = {};
+
+const gremlinWidthMultiplier = 2;
+let gremlinWidth = avatarWidth * gremlinWidthMultiplier;
+
+let gremlinHeight = window.innerHeight - floorY;
+
+const gremlinSlumberColour = "Tan";
+
+const gremlinLiveColour = "Orchid";
+
+const gremlinUnleashPears = 15;//health and charge pears accumulate until this amount is reached - then The Gremlin is unleashed; it should be an even number
+
+let gremlinMaxSpeedPears = 14;//once The Gremlin has accumulated this nr of speed pears it attains speedMax; the current speed of The Gremlin is calculated by TROT:
+                            //currentSpeed = speedMax * currentSpeedPears / maxSpeedPears
+                            //the speed pears are accumulated by The Gremlin while isLive = true and isLive = false, unlike the other pears, which are accumulated only
+                            //during the isLive = false phase
+
+const gremlinSpeedMaxMultiplier = 1.3;
+let gremlinSpeedMax = playerSpeedMax * gremlinSpeedMaxMultiplier;//pixel/seconds
+
+const gremlinDischarges = 5;
+//the time duration in seconds between discharges is calculated like this: gremlinLifeCounterMax / gremlinDischarges
+//the first discharge takes place at the end of the first time interval between discharges
+//the last discharge takes place exactly when gremlinLifeCounter goes back to 0 and The Gremlin slips into his deep slumber once more
+
+const gremlinDamageMultiplier = 0.3;
+let gremlinDischargeDamage = (gremlinUnleashPears / gremlinDischarges) * damageReference * gremlinDamageMultiplier;
+
+const gremlinDamageIntervalPercentage = [100, 60];//at the epicenter of the gremlin discharge, the percentage of gremlinDischargeDamage inflicted as damage to a player 
+                                        //is gremlinDamageInterval[0]; at the limit of the gremlinDischargeRange, the percentage of gremlinDischargeDamage
+                                        //inflicted as damage to a player is gremlinDamageInterval[1]. the values between those limits are decreasing linearly
+
+let gremlinDamageInterval = [gremlinDamageIntervalPercentage[0] * gremlinDischargeDamage / 100, gremlinDamageIntervalPercentage[1] * gremlinDischargeDamage / 100];                                        
+
+const gremlinDischargeHitProbability = 80;//percent hit probability on targets in range of discharge; constant throughout the whole discharge range
+
+const gremlinDischargeRangeMultiplier = 0.65;
+let gremlinDischargeRange = window.innerWidth * gremlinDischargeRangeMultiplier;
+
+const gremlinTimeBetweenDischarges = 7;//in seconds
+
+const gremlinPrimeDischargeTimeMultiplier = 5;//The Gremlin does not move for a time interval of gremlinPrimeDischargeTime exactly before a discharge event
+let gremlinPrimeDischargeTime = gremlinTimeBetweenDischarges / gremlinPrimeDischargeTimeMultiplier;
+
+const gremlinDischargeColour = "255, 255, 255";
+
+const gremlinSuperHealthPears = 3;//equivalent value in common pears amount for gremlin accumulators
+const gremlinSuperChargePears = 3;
+const gremlinSuperStaminaPears = 3;
+
+const gremlinLifeCounter = 0;
+const gremlinLifeCounterMax = 40;//in seconds
+
+
+//Info Displays
+
+const infoDisplayAvatarWidthMultiplier = 1.2;
+let infoDisplayWidth = avatarWidth * infoDisplayAvatarWidthMultiplier;
+
+const infoDisplayBaseMarginMultiplier = 0.15;
+let infoDisplayBaseMargin = infoDisplayWidth * infoDisplayBaseMarginMultiplier;
+
+const infoDisplayTopMarginMultiplier = 0.08;
+let infoDisplayTopMargin = infoDisplayWidth * infoDisplayTopMarginMultiplier;
+
+const infoDisplayLateralMarginMultiplier = 0.12;
+let infoDisplayLateralMargin = infoDisplayWidth * infoDisplayLateralMarginMultiplier;
+
+let infoDisplayFontType = "Arial";
+
+const infoDisplayNumberOfCharacters = 3;//mainly, a "+" followed by a two digits integer, no spaces
+
+const infoDisplayFontSizeMultiplier = 2;
+let infoDisplayFontSize = Math.floor(infoDisplayWidth / infoDisplayNumberOfCharacters * infoDisplayFontSizeMultiplier);
+
+const infoDisplayMaxCounter = 10;//in seconds, measures the maximum time of visibility of the text displayed in an infoDisplay cell
+
+const infoDisplayAlphaSustainTimeMultiplier = 0.3;
+//after this period of time the text in the infoDisplay begins to fade (alpha value becomes a fraction of the value of the time counter)
+let infoDisplayAlphaSustainTime = infoDisplayMaxCounter * infoDisplayAlphaSustainTimeMultiplier;//in seconds
+
+
 let playersArray = [];
 let avatarsArray = [];
 let metersArray = [];
 let minesArray = [];
 let explosionsArray = [];
+let infoDisplaysArray = [];
 
 let playerCounter = 0;
 
@@ -900,6 +1050,8 @@ let previousSecondsModulo = 0;
 
 let secondsCounter = 0;
 
+
+
 let soundsArray = [];
 
 let soundObject = {
@@ -916,6 +1068,9 @@ let soundObject = {
     }
 }
 
+/************************************************/
+//END - GLOBAL VARIABLES DECLARATIONS
+
 
 
 window.addEventListener("gamepadconnected", (e) => {
@@ -930,7 +1085,7 @@ window.addEventListener("gamepadconnected", (e) => {
 
  
 
-                playersArray.push(new Player(playerHealthMax, playerStaminaMax, chargesPerCapacitor, numberOfCapacitors, 100, 0, 2, false, playerIndex, playersColours[playerIndex], playerSpeedMax, 0, playerAcceleration, playerDeceleration, 0, 0, 0, 0, 0));
+                playersArray.push(new Player(playerHealthMax, playerStaminaMax, chargesPerCapacitor, numberOfCapacitors, 40, 0, 2, false, playerIndex, playersColours[playerIndex], playerSpeedMax, 0, playerAcceleration, playerDeceleration, 0, 0, 0, 0, 0));
 
                 avatarsArray.push(new Avatar(centerAvatarOriginX, avatarOriginY, avatarWidth, avatarHeight, avatarCrestsNumber, avatarCrestOffsetMultiplier, 
                     avatarCrestHeightMultiplier, avatarStripesNumber, playerIndex, -1 - playerIndex - 1, playersArray[playerIndex].playerColour, defaultAvatarAlphaChannel, ctx, lanceLength, lanceOverlapLength, avatarRndYInterval));
@@ -939,7 +1094,10 @@ window.addEventListener("gamepadconnected", (e) => {
 
                 minesArray.push(new Mine(0 , 0 , mineWidth , mineHeight , coreOffset , 0 , playerIndex , mineLineWidth , false ));
 
-                explosionsArray.push(new Explosion(explosionRadius , 0 , 0 , explosionDamage , explosionSpeed , false, 1));
+                explosionsArray.push(new Explosion(explosionRadius , 0 , 0 , explosionDamage , explosionSpeed , false, 1, explosionLineWidthMultiplier));
+
+                infoDisplaysArray.push(new InfoDisplay(i, 0, avatarOriginY, infoDisplayWidth, infoDisplayBaseMargin, infoDisplayTopMargin, infoDisplayLateralMargin,
+                    infoDisplayFontType, infoDisplayNumberOfCharacters, infoDisplayMaxCounter, infoDisplayAlphaSustainTime, ctx, infoDisplayFontSize));
 
                 playerIndex++;
             }
@@ -950,7 +1108,5 @@ window.addEventListener("gamepadconnected", (e) => {
         stageLobbyOn = true;
     }
 });
-
-
     
 window.requestAnimationFrame(mainLoop);
