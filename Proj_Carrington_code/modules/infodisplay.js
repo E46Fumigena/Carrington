@@ -52,7 +52,7 @@
         this.coloursArray[1] = this.coloursArray[0];
 
         this.coloursArray[0] = textColour;
-
+        /*
         console.log(this.infosArray);
 
         console.log(this.coloursArray);
@@ -62,6 +62,7 @@
         console.log(this.index);
 
         console.log(this.fontSize);
+        */
     }
 
 

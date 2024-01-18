@@ -1,3 +1,5 @@
+import {playOneHit, playPlayerLoop} from "../logic.js";
+
 class Explosion{
 
     constructor(maxRadius, originX, originY, damage, speed, isLive, currentRadius, lineWidthMultiplier){
@@ -12,7 +14,7 @@ class Explosion{
         this.lineWidthMultiplier = lineWidthMultiplier;
     }
     
-    update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours){
+    update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray){
 
         if(this.isLive){
 
@@ -36,6 +38,9 @@ class Explosion{
 
                         if(Math.random() * 100 <= 100 - x){
 
+                            //playsoundhit here
+                            playOneHit(playerSoundsArray[i][3], audioContext, playersSubmixArray[i].hitGain);
+
                             playersArray[i].health = playersArray[i].health - this.damage;
 
                             infoDisplaysArray[i].injectInfo(`-${this.damage}`, pearColours[0]);
@@ -43,6 +48,14 @@ class Explosion{
                             if(playersArray[i].health <= 0){
 
                                 playersArray[i].isAlive = false;
+                                //stop killed player current loop sounds
+                                for(let j = 0; j < playerLoopsArray[i].length; j++){
+
+                                    if(playerLoopsArray[i][j] != null){
+                                        
+                                        playerLoopsArray[i][j].stop();
+                                    }
+                                }
                             }
                         }
                     }
@@ -107,7 +120,7 @@ class GremlinDischarge{
         this.hitProbability = hitProbability;
     }
     
-    update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours){
+    update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray){
 
         if(this.isLive){
 
@@ -132,6 +145,9 @@ class GremlinDischarge{
 
                         if(Math.random() * 100 <= this.hitProbability){
 
+                            //playsoundhit here
+                            playOneHit(playerSoundsArray[i][3], audioContext, playersSubmixArray[i].hitGain);
+
                             playersArray[i].health = playersArray[i].health - currentDamage;
 
                             infoDisplaysArray[i].injectInfo(`-${currentDamage}`, pearColours[0]);
@@ -139,6 +155,15 @@ class GremlinDischarge{
                             if(playersArray[i].health <= 0){
 
                                 playersArray[i].isAlive = false;
+
+                                //stop killed player current loop sounds
+                                for(let j = 0; j < playerLoopsArray[i].length; j++){
+
+                                    if(playerLoopsArray[i][j] != null){
+                                        
+                                        playerLoopsArray[i][j].stop();
+                                    }
+                                }
                             }
                         }
                     }

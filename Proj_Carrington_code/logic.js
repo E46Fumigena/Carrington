@@ -5,6 +5,97 @@ import {Mine} from "./modules/mine.js";
 import {Explosion, GremlinDischarge} from "./modules/explosion.js";
 import {Gremlin} from "./modules/gremlin.js";
 import {InfoDisplay} from "./modules/infodisplay.js";
+import {PlayerSubmix, PearChannel, PearSubmix, MineSubmix, GeneralMix, ExplosionChannel} from "./modules/audiomix.js";
+
+async function loadSound(soundPath, audioContext){
+
+    try{
+
+        const response = await fetch(`${soundPath}`);
+
+        playerOneMoveSound = await audioContext.decodeAudioData(await response.arrayBuffer());
+    }
+    catch (err) {
+        
+        console.error(`Unable to fetch the audio file. Error: ${err.message}`);
+    }
+}
+
+/*
+async function loadSoundPlayer(audioContext, playersNumber, soundsNumber){
+
+    try{
+
+        for(let i = 0; i < playersNumber; i++){
+
+            for(let j = 0; j < soundsNumber; j++){
+
+                const response = await fetch(`./sounds/player_${i}_${j}.wav`);
+
+                playerSoundsArray[i][j] = await audioContext.decodeAudioData(await response.arrayBuffer());
+            }
+        }
+
+        console.log(playerSoundsArray);
+    }
+    catch (err) {
+        
+        console.error(`Unable to fetch the audio file. Error: ${err.message}`);
+    }
+}
+*/
+
+async function loadSoundPlayer(audioContext, playersNumber, soundsNumber){
+
+    try{
+
+        for(let i = 0; i < playersNumber; i++){
+
+            const shovelArray = [];
+
+            for(let j = 0; j < soundsNumber; j++){
+
+                const response = await fetch(`./sounds/player_${i}_${j}.wav`);
+
+                shovelArray.push(await audioContext.decodeAudioData(await response.arrayBuffer()));
+            }
+
+            playerSoundsArray.push(shovelArray);
+        }
+    }
+    catch (err) {
+        
+        console.error(`Unable to fetch the audio file. Error: ${err.message}`);
+    }
+}
+
+
+function playOneHit(buffer, audioContext, outputNode){
+
+    let source = audioContext.createBufferSource();
+
+    source.buffer = buffer;
+
+    source.connect(outputNode);
+
+    source.loop = false;
+
+    source.start();
+}
+
+
+function playPlayerLoop(buffer, playerIndex, loopIndex, audioContext, outputNode){
+
+    playerLoopsArray[playerIndex][loopIndex] = audioContext.createBufferSource();
+
+    playerLoopsArray[playerIndex][loopIndex].buffer = buffer;
+
+    playerLoopsArray[playerIndex][loopIndex].connect(outputNode);
+
+    playerLoopsArray[playerIndex][loopIndex].loop = true;
+
+    playerLoopsArray[playerIndex][loopIndex].start();
+}
 
 
 function lobbyLoop(){
@@ -36,7 +127,7 @@ function lobbyLoop(){
 
                     avatarsArray[i].drawIdentifier();
 
-                    //console.log(`player index is: ${i}`);
+                    console.log(`player index is: ${i}`);
                 }
 
             }
@@ -73,8 +164,6 @@ function lobbyLoop(){
             stageLobbyOn = false;
 
             stageCountdownOn = true;
-
-
         }
     }
 }
@@ -166,7 +255,14 @@ function gameLoop(timeStamp){
     let subtractStamina = false;
 
     let alivePlayerIndex = -1;
+/*
+    let previousAlivePlayersArray = [];
 
+    for(let i = 0; i < playersArray.length; i++){
+
+
+    }
+*/
 
 
     if (startTime === 0){
@@ -188,6 +284,12 @@ function gameLoop(timeStamp){
         //UPDATE AVATARS
 
         updateAvatars: for(let i = 0; i < playersArray.length; i++){
+
+            let previousPlayerSpeed = playersArray[i].speed;
+
+            let previousLeftLanceCounter = playersArray[i].lanceLeftCounter;
+
+            let previousRightLanceCounter = playersArray[i].lanceRightCounter;
 
             if(playersArray[i].isAlive){
 
@@ -214,6 +316,13 @@ function gameLoop(timeStamp){
 
                 //movement button to the RIGHT pressed; processing movement to the RIGHT
                 if(currentGamepad.buttons[15].pressed && playersArray[i].counterStaggering === 0){
+
+                    //playersSubmixArray[i].setPlayerPan(avatarsArray[i].originX);
+
+                    //playBuffer(playerOneMoveSound, audioContext, playersSubmixArray[i].moveGain);
+
+                    //playPlayerLoop(playerSoundsArray[i][0], i, 0, audioContext, playersSubmixArray[i].moveGain);
+
 
                     //sprint buttons pressed condition
                     if((currentGamepad.buttons[5].pressed || currentGamepad.buttons[4].pressed) && playersArray[i].stamina != 0){
@@ -354,6 +463,8 @@ function gameLoop(timeStamp){
                 //left
                 if(avatarsArray[i].originX <= 0){
 
+                    playOneHit(playerSoundsArray[i][3], audioContext, playersSubmixArray[i].hitGain);
+
                     avatarsArray[i].originX = 1;
                     //if the player is already in staggering mode and hits the wall inertially, the higher of the staggering counter values takes precedence
                     playersArray[i].counterStaggering = Math.max(Math.abs(playersArray[i].speed) * staggeringMaxTime * 1000 / playerSpeedMax, playersArray[i].counterStaggering);//player's Staggering counter is in milliseconds
@@ -375,11 +486,15 @@ function gameLoop(timeStamp){
 
                         playersArray[i].isAlive = false;
 
-                        continue updateAvatars;
+                        playersArray[i].speed = 0;
+
+                        //continue updateAvatars;
                     }
                 }
                 //right
                 if(avatarsArray[i].originX + avatarsArray[i].width >= window.innerWidth){
+
+                    playOneHit(playerSoundsArray[i][3], audioContext, playersSubmixArray[i].hitGain);
 
                     avatarsArray[i].originX = window.innerWidth - avatarsArray[i].width - 1;
                     //if the player is already in staggering mode and hits the wall inertially, the higher of the staggering counter values takes precedence
@@ -402,7 +517,9 @@ function gameLoop(timeStamp){
 
                         playersArray[i].isAlive = false;
 
-                        continue updateAvatars;
+                        playersArray[i].speed = 0;
+
+                        //continue updateAvatars;
                     }
                 }
                 //if the player is staggering, this makes its avatar blink by modulating the alpha channel of the avatar
@@ -494,12 +611,22 @@ function gameLoop(timeStamp){
                     }
                 }
 
+
+                
+
                 //process TARGETS to the LEFT lances
                 if(playersArray[i].lanceLeftCounter > 0){
 
                     targetsArrayLeft = [... playersArray[i].indexTargetsLeft(i, avatarsArray, playersArray, lanceLength, avatarWidth)];
 
                     if(targetsArrayLeft.length > 0){
+
+                        if(previousTargetCheck[i] === false){
+
+                            playPlayerLoop(playerSoundsArray[i][2], i, 2, audioContext, playersSubmixArray[i].lanceContactGain);
+                        }
+
+                        previousTargetCheck[i] = true;
 
                         for(let j = 0; j < targetsArrayLeft.length; j++){
 
@@ -516,6 +643,15 @@ function gameLoop(timeStamp){
                             }
                         }
                     }
+                    else{
+
+                        if(previousTargetCheck[i] === true){
+
+                            playerLoopsArray[i][2].stop();
+                        }
+
+                        previousTargetCheck[i] = false;
+                    }
                 }
 
                 //process TARGETS to the Right lances
@@ -524,6 +660,13 @@ function gameLoop(timeStamp){
                     targetsArrayRight = [... playersArray[i].indexTargetsRight(i, avatarsArray, playersArray, lanceLength, avatarWidth)];
 
                     if(targetsArrayRight.length > 0){
+
+                        if(previousTargetCheck[i] === false){
+
+                            playPlayerLoop(playerSoundsArray[i][2], i, 2, audioContext, playersSubmixArray[i].lanceContactGain);
+                        }
+
+                        previousTargetCheck[i] = true;                        
 
                         for(let j = 0; j < targetsArrayRight.length; j++){
 
@@ -539,6 +682,15 @@ function gameLoop(timeStamp){
                                 playersArray[targetsArrayRight[j]].isAlive = false;
                             }
                         }
+                    }
+                    else{
+
+                        if(previousTargetCheck[i] === true){
+
+                            playerLoopsArray[i][2].stop();
+                        }
+
+                        previousTargetCheck[i] = false;
                     }
                 }
 
@@ -614,13 +766,56 @@ function gameLoop(timeStamp){
                 //minesArray[i].draw(playersColours, ctx);
             }
 
+            
+            
+
+            //move sounds start/stop
+            if(previousPlayerSpeed === 0 && playersArray[i].speed !=0){
+
+                playPlayerLoop(playerSoundsArray[i][0], i, 0, audioContext, playersSubmixArray[i].moveGain);
+
+                //console.log("pupu!!!");
+            }
+
+            if(previousPlayerSpeed != 0 && playersArray[i].speed === 0){
+
+                playerLoopsArray[i][0].stop();
+
+                //console.log("giugiuc!!!");
+            }
+
+            //lance sounds start/stop
+            if(previousLeftLanceCounter === 0 && playersArray[i].lanceLeftCounter > 0){
+
+                playPlayerLoop(playerSoundsArray[i][1], i, 1, audioContext, playersSubmixArray[i].lanceGain);
+            }
+
+            if(previousRightLanceCounter === 0 && playersArray[i].lanceRightCounter > 0){
+
+                playPlayerLoop(playerSoundsArray[i][1], i, 1, audioContext, playersSubmixArray[i].lanceGain);
+            }
+
+            if(previousLeftLanceCounter > 0 && playersArray[i].lanceLeftCounter === 0){
+
+                playerLoopsArray[i][1].stop();
+            }
+
+            if(previousRightLanceCounter > 0 && playersArray[i].lanceRightCounter === 0){
+
+                playerLoopsArray[i][1].stop();
+            }
+
+            //player panning update
+            playersSubmixArray[i].setPlayerPan(avatarsArray[i].originX);                
+             
+
         }
 
         for(let i = 0; i < pearsArray.length; i++){
 
             
 
-            pearsArray[i].update(playersArray, avatarsArray, deltaTimeStamp, floorY, ceilingY, healthBonus, staminaBonus, boulderMalus, staggeringMaxTime, damageReference, theGremlin, infoDisplaysArray);
+            pearsArray[i].update(playersArray, avatarsArray, deltaTimeStamp, floorY, ceilingY, healthBonus, staminaBonus, boulderMalus, staggeringMaxTime, damageReference, theGremlin, infoDisplaysArray, audioContext, playerSoundsArray, playersSubmixArray, playerLoopsArray);
 
             pearsArray[i].draw();
 
@@ -651,7 +846,7 @@ function gameLoop(timeStamp){
 
         for(let i = 0; i < explosionsArray.length;i++){
 
-            explosionsArray[i].update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours);
+            explosionsArray[i].update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray);
             explosionsArray[i].draw(playersColours[i],ctx, deltaTimeStamp);
         }
 
@@ -659,7 +854,7 @@ function gameLoop(timeStamp){
 
         theGremlin.draw(ctx);
 
-        gremlinDischarge.update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours);
+        gremlinDischarge.update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray);
         gremlinDischarge.draw(gremlinDischargeColour,ctx, deltaTimeStamp);
 
         for(let i = 0; i < infoDisplaysArray.length; i++){
@@ -674,6 +869,8 @@ function gameLoop(timeStamp){
 
         previousTimeStamp = timeStamp;
     }
+
+
 }
 
 
@@ -1012,12 +1209,24 @@ const infoDisplayAlphaSustainTimeMultiplier = 0.3;
 let infoDisplayAlphaSustainTime = infoDisplayMaxCounter * infoDisplayAlphaSustainTimeMultiplier;//in seconds
 
 
+//Sound Section
+
+let playerSoundsArray = [];
+
+let playerLoopsArray = [[null, null, null], [null, null, null], [null, null, null], [null, null, null]];
+
+let channelIndex = 0;
+
+
 let playersArray = [];
 let avatarsArray = [];
 let metersArray = [];
 let minesArray = [];
 let explosionsArray = [];
 let infoDisplaysArray = [];
+let playersSubmixArray = [];
+
+let previousTargetCheck = [false, false, false, false];
 
 let playerCounter = 0;
 
@@ -1050,23 +1259,16 @@ let previousSecondsModulo = 0;
 
 let secondsCounter = 0;
 
+let playerOneMoveSound = null;
+
+let audioContext = null;
+
+let audioDestination = null;
+
+let generalMix = null;
 
 
-let soundsArray = [];
 
-let soundObject = {
-
-    soundTest001:{
-        
-        src : "./sounds/testsound001.ogg",
-
-        type : "audio/ogg",
-
-        loop: true,
-
-        preload: "auto"
-    }
-}
 
 /************************************************/
 //END - GLOBAL VARIABLES DECLARATIONS
@@ -1078,6 +1280,22 @@ window.addEventListener("gamepadconnected", (e) => {
     if (stageInitGame){
 
         let playerIndex = 0;
+
+        audioContext = new AudioContext();
+
+        //audioDestination = audioContext.destination;
+
+        generalMix = new GeneralMix(audioContext, 32);
+
+        generalMix.setGeneralPan();
+
+        //console.log(`first log of general mix:`);
+        //console.log(generalMix);
+
+        //loadSound("./sounds/player_1_move_source_001.wav", audioContext);
+
+        loadSoundPlayer(audioContext, 4, 5);
+
 
         for(let i = 0; i < navigator.getGamepads().length; i++){
 
@@ -1099,9 +1317,29 @@ window.addEventListener("gamepadconnected", (e) => {
                 infoDisplaysArray.push(new InfoDisplay(i, 0, avatarOriginY, infoDisplayWidth, infoDisplayBaseMargin, infoDisplayTopMargin, infoDisplayLateralMargin,
                     infoDisplayFontType, infoDisplayNumberOfCharacters, infoDisplayMaxCounter, infoDisplayAlphaSustainTime, ctx, infoDisplayFontSize));
 
+                playersSubmixArray.push(new PlayerSubmix(audioContext, channelIndex, generalMix.generalMixerLeft, generalMix.generalMixerRight));
+
+
+                channelIndex++;
+
                 playerIndex++;
             }
         }
+
+        for(let i = 0; i < playersSubmixArray.length; i++){
+
+            playersSubmixArray[i].bonusReceivedGain.gain.value = 0.2;
+
+            playersSubmixArray[i].moveGain.gain.value = 0.8;
+
+            playersSubmixArray[i].lanceGain.gain.value = 0.7;
+
+        }
+
+        //console.log(playersSubmixArray);
+
+        //console.log(`second log of general mix:`);
+        //console.log(generalMix);
 
         stageInitGame = false;
 
@@ -1110,3 +1348,5 @@ window.addEventListener("gamepadconnected", (e) => {
 });
     
 window.requestAnimationFrame(mainLoop);
+
+export {playOneHit, playPlayerLoop};

@@ -1,5 +1,6 @@
 import {randomSignedIntIntervaled, randomWeightedInt, completeRectCollisionCheck, randomArrayPosition, randomUnsignedIntIntervaled} from "./calc.js";
 import{InfoDisplay} from "./infodisplay.js";
+import {playOneHit, playPlayerLoop} from "../logic.js";
 
 class Pear{
 
@@ -35,7 +36,7 @@ class Pear{
 
     }
 
-    update(playersArray, avatarsArray, deltaTimeStamp, floorY, ceilingY, healthBonus, staminaBonus, boulderMalus, staggeringMaxTime, damageReference, theGremlin, infoDisplaysArray){
+    update(playersArray, avatarsArray, deltaTimeStamp, floorY, ceilingY, healthBonus, staminaBonus, boulderMalus, staggeringMaxTime, damageReference, theGremlin, infoDisplaysArray, audioContext, playerSoundsArray, playersSubmixArray, playerLoopsArray){
 
         if(this.ceilingCounter != 0){
 
@@ -82,6 +83,9 @@ class Pear{
                 if(collisionsRegistry.length != 0){
 
                     let collisionTarget = collisionsRegistry[randomArrayPosition(collisionsRegistry)];
+
+                    //play player bonus received
+                    playOneHit(playerSoundsArray[collisionTarget][4], audioContext, playersSubmixArray[collisionTarget].bonusReceivedGain);
 
                     switch(this.pearType){
 
@@ -312,6 +316,9 @@ class Pear{
 
                 let collisionTarget = collisionsRegistry[randomArrayPosition(collisionsRegistry)];
 
+                //playsoundhit here
+                playOneHit(playerSoundsArray[collisionTarget][3], audioContext, playersSubmixArray[collisionTarget].hitGain);
+
                 switch(this.pearType){
                     
                     case 6:
@@ -339,6 +346,11 @@ class Pear{
                             playersArray[collisionTarget].health = playersArray[collisionTarget].health - Math.abs(playersArray[collisionTarget].speed) * damageReference / playersArray[collisionTarget].speedMax;
 
                             infoDisplaysArray[collisionTarget].injectInfo(`-${Math.floor(Math.abs(playersArray[collisionTarget].speed) * damageReference / playersArray[collisionTarget].speedMax)}`, this.pearColours[0]);
+
+                            if(playersArray[collisionTarget].health < 0){
+
+                                playersArray[collisionTarget].health = 0;
+                            }
                         }
                         
                     break;
@@ -353,6 +365,18 @@ class Pear{
                 if(playersArray[collisionTarget].health === 0){
 
                     playersArray[collisionTarget].isAlive = false;
+
+                    console.log("player loops array [collisionTarget].length:");
+                    console.log(playerLoopsArray[collisionTarget].length);
+
+                    //stop killed player curently looping sounds
+                    for(let i = 0; i < playerLoopsArray[collisionTarget].length; i++){
+
+                        if(playerLoopsArray[collisionTarget][i] != null){
+                            
+                            playerLoopsArray[collisionTarget][i].stop();
+                        }
+                    }
                 }
 
                 this.isLive = false;
