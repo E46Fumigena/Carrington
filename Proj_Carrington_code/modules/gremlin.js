@@ -1,4 +1,5 @@
 import {randomSignedIntIntervaled, randomWeightedInt, completeRectCollisionCheck, randomUnsignedIntIntervaled,rectangleCollisionCheck} from "./calc.js";
+import {playOneHit, playPlayerLoop} from "../logic.js";
 
 class Gremlin{
 
@@ -36,7 +37,7 @@ class Gremlin{
 
     previousModulo = 0;
 
-    update(deltaTimeStamp, gremlinDischarge, floorY){
+    update(deltaTimeStamp, gremlinDischarge, floorY, soundExplosion, audioContext, explosionsChannelsArray){
 
         if(this.isLive){
 
@@ -85,6 +86,8 @@ class Gremlin{
                 gremlinDischarge.originX = this.originX + this.width / 2;
 
                 gremlinDischarge.originY = floorY;
+
+                playOneHit(soundExplosion, audioContext, explosionsChannelsArray[4].explosionPanner);
 
                 //console.log(gremlinDischarge);
             }

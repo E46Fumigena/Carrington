@@ -14,7 +14,7 @@ class Explosion{
         this.lineWidthMultiplier = lineWidthMultiplier;
     }
     
-    update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray){
+    update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray, soundExplosion, explosionsChannelsArray){
 
         if(this.isLive){
 
@@ -73,6 +73,8 @@ class Explosion{
 
                         if(Math.random() * 100 <= 100 - x){
 
+                            playOneHit(soundExplosion, audioContext, explosionsChannelsArray[i].explosionPanner);
+
                             minesArray[i].primed = false;
 
                             explosionsArray[i].isLive = true;
@@ -120,7 +122,7 @@ class GremlinDischarge{
         this.hitProbability = hitProbability;
     }
     
-    update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray){
+    update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray, soundExplosion, explosionsChannelsArray){
 
         if(this.isLive){
 
@@ -178,6 +180,8 @@ class GremlinDischarge{
                         && Math.abs(this.originX - (minesArray[i].originX + minesArray[i].width / 2)) >= this.currentRadius - this.speed * deltaTimeStamp/1000){
 
                         if(Math.random() * 100 <= this.hitProbability){
+
+                            playOneHit(soundExplosion, audioContext, explosionsChannelsArray[i].explosionPanner);
 
                             minesArray[i].primed = false;
 

@@ -21,6 +21,22 @@ async function loadSound(soundPath, audioContext){
     }
 }
 
+
+async function loadSoundExplosion(soundPath, audioContext){
+
+    try{
+
+        const response = await fetch(soundPath);
+
+        soundExplosion = await audioContext.decodeAudioData(await response.arrayBuffer());
+    }
+    catch (err) {
+        
+        console.error(`Unable to fetch the audio file. Error: ${err.message}`);
+    }
+}
+
+
 /*
 async function loadSoundPlayer(audioContext, playersNumber, soundsNumber){
 
@@ -836,6 +852,10 @@ function gameLoop(timeStamp){
                     explosionsArray[i].originX = minesArray[i].originX + minesArray[i].width/2;
                     explosionsArray[i].originY = floorY;
 
+                    playOneHit(soundExplosion, audioContext, explosionsChannelsArray[i].explosionPanner);
+
+                    explosionsChannelsArray[i].setExplosionPan(explosionsArray[i].originX);
+
                     //console.log(`mine index: ${i}`);
                     //console.log(`epicenter X: ${explosionsArray[i].originX}`);
                     //console.log(`epicenter Y: ${explosionsArray[i].originY}`);
@@ -846,15 +866,15 @@ function gameLoop(timeStamp){
 
         for(let i = 0; i < explosionsArray.length;i++){
 
-            explosionsArray[i].update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray);
+            explosionsArray[i].update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray, soundExplosion, explosionsChannelsArray);
             explosionsArray[i].draw(playersColours[i],ctx, deltaTimeStamp);
         }
 
-        theGremlin.update(deltaTimeStamp, gremlinDischarge, floorY);
+        theGremlin.update(deltaTimeStamp, gremlinDischarge, floorY, soundExplosion, audioContext, explosionsChannelsArray);
 
         theGremlin.draw(ctx);
 
-        gremlinDischarge.update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray);
+        gremlinDischarge.update(deltaTimeStamp, avatarsArray, playersArray, minesArray, explosionsArray, floorY, infoDisplaysArray, pearColours, playerSoundsArray, playersSubmixArray, audioContext, playerLoopsArray, soundExplosion, explosionsChannelsArray);
         gremlinDischarge.draw(gremlinDischargeColour,ctx, deltaTimeStamp);
 
         for(let i = 0; i < infoDisplaysArray.length; i++){
@@ -1014,7 +1034,7 @@ const numberOfCapacitors = 3;
 
 let pearWidth = window.innerWidth / pearsNumber;
 
-const pearSpeedMaxMultiplier = 3;
+const pearSpeedMaxMultiplier = 2.3;
 
 let pearSpeedMax = (floorY - ceilingY) / pearSpeedMaxMultiplier;//in pixels; max distance covered per second by a pear in freefall
 
@@ -1040,7 +1060,7 @@ let boulderMalus = damageReference;
 const superBoulderMalus = playerHealthMax;//the amount subtracted from playerHealthMax value when a collision occurs between a player and a super boulder. it must be an instakill
 //so the value is equal to the playerHealthMax value. any overflow must be shaven off
 
-const ceilingCounterInterval = [1000, 25000];//in milliseconds, it is the interval of time from which the resting time of a pear at the ceiling is randomly chosen
+const ceilingCounterInterval = [1000, 8000];//in milliseconds, it is the interval of time from which the resting time of a pear at the ceiling is randomly chosen
 
 const floorCounterInterval = [2000, 7000];//in milliseconds, it is the interval of time from which the resting time of a boulder on the floor is randomly chosen
 
@@ -1137,9 +1157,9 @@ const gremlinSlumberColour = "Tan";
 
 const gremlinLiveColour = "Orchid";
 
-const gremlinUnleashPears = 15;//health and charge pears accumulate until this amount is reached - then The Gremlin is unleashed; it should be an even number
+const gremlinUnleashPears = 6;//health and charge pears accumulate until this amount is reached - then The Gremlin is unleashed; it should be an even number
 
-let gremlinMaxSpeedPears = 14;//once The Gremlin has accumulated this nr of speed pears it attains speedMax; the current speed of The Gremlin is calculated by TROT:
+let gremlinMaxSpeedPears = 8;//once The Gremlin has accumulated this nr of speed pears it attains speedMax; the current speed of The Gremlin is calculated by TROT:
                             //currentSpeed = speedMax * currentSpeedPears / maxSpeedPears
                             //the speed pears are accumulated by The Gremlin while isLive = true and isLive = false, unlike the other pears, which are accumulated only
                             //during the isLive = false phase
@@ -1152,7 +1172,7 @@ const gremlinDischarges = 5;
 //the first discharge takes place at the end of the first time interval between discharges
 //the last discharge takes place exactly when gremlinLifeCounter goes back to 0 and The Gremlin slips into his deep slumber once more
 
-const gremlinDamageMultiplier = 0.3;
+const gremlinDamageMultiplier = 0.8;
 let gremlinDischargeDamage = (gremlinUnleashPears / gremlinDischarges) * damageReference * gremlinDamageMultiplier;
 
 const gremlinDamageIntervalPercentage = [100, 60];//at the epicenter of the gremlin discharge, the percentage of gremlinDischargeDamage inflicted as damage to a player 
@@ -1202,7 +1222,7 @@ const infoDisplayNumberOfCharacters = 3;//mainly, a "+" followed by a two digits
 const infoDisplayFontSizeMultiplier = 2;
 let infoDisplayFontSize = Math.floor(infoDisplayWidth / infoDisplayNumberOfCharacters * infoDisplayFontSizeMultiplier);
 
-const infoDisplayMaxCounter = 10;//in seconds, measures the maximum time of visibility of the text displayed in an infoDisplay cell
+const infoDisplayMaxCounter = 6;//in seconds, measures the maximum time of visibility of the text displayed in an infoDisplay cell
 
 const infoDisplayAlphaSustainTimeMultiplier = 0.3;
 //after this period of time the text in the infoDisplay begins to fade (alpha value becomes a fraction of the value of the time counter)
@@ -1217,6 +1237,10 @@ let playerLoopsArray = [[null, null, null], [null, null, null], [null, null, nul
 
 let channelIndex = 0;
 
+let soundExplosion = null;
+
+const soundExplosionPath = "./sounds/explosion_001.wav";
+
 
 let playersArray = [];
 let avatarsArray = [];
@@ -1225,6 +1249,7 @@ let minesArray = [];
 let explosionsArray = [];
 let infoDisplaysArray = [];
 let playersSubmixArray = [];
+let explosionsChannelsArray = [];
 
 let previousTargetCheck = [false, false, false, false];
 
@@ -1295,6 +1320,15 @@ window.addEventListener("gamepadconnected", (e) => {
         //loadSound("./sounds/player_1_move_source_001.wav", audioContext);
 
         loadSoundPlayer(audioContext, 4, 5);
+
+        loadSoundExplosion(soundExplosionPath, audioContext);
+
+        for(let i = 0; i < 5; i++){
+
+            explosionsChannelsArray.push(new ExplosionChannel(audioContext, 0, generalMix.generalMixerLeft, generalMix.generalMixerRight));
+        }
+
+        console.log(explosionsChannelsArray);
 
 
         for(let i = 0; i < navigator.getGamepads().length; i++){
